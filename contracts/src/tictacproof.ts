@@ -32,7 +32,7 @@ function Optional<T>(type: Provable<T>) {
 
 class OptionalBool extends Optional(Bool) {}
 
-class GameState extends Struct({
+export class GameState extends Struct({
   player1: PublicKey,
   player2: PublicKey,
   gameDone: Bool,
