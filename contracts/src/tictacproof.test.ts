@@ -14,14 +14,17 @@ describe('tictacproof', () => {
   let player1: PublicKey,
     player1Key: PrivateKey,
     player2: PublicKey,
+    player2Key: PrivateKey,
     zkAppAddress: PublicKey,
     zkAppPrivateKey: PrivateKey;
 
   beforeEach(async () => {
     let Local = Mina.LocalBlockchain({ proofsEnabled: false });
     Mina.setActiveInstance(Local);
-    [{ publicKey: player1, privateKey: player1Key }, { publicKey: player2 }] =
-      Local.testAccounts;
+    [
+      { publicKey: player1, privateKey: player1Key },
+      { publicKey: player2, privateKey: player2Key },
+    ] = Local.testAccounts;
     zkAppPrivateKey = PrivateKey.random();
     zkAppAddress = zkAppPrivateKey.toPublicKey();
   });
@@ -44,46 +47,33 @@ describe('tictacproof', () => {
 
     await TicTacProof.compile();
 
-    // // deploy
-    // let txn = await Mina.transaction(player1, () => {
-    //   AccountUpdate.fundNewAccount(player1);
-    //   zkApp.deploy();
-    // });
-    // await txn.prove();
-    // await txn.sign([zkAppPrivateKey, player1Key]).send();
+    const state: GameState = {
+      board: Field(0),
+      player1,
+      player2,
+      gameDone: Bool(false),
+      nextIsPlayer2: Bool(false),
+    };
+    const proof = await zkApp.startGame(state, player1, player2);
 
-    // const tx = await Mina.transaction(player1, () => {
-    //   zkApp.startGame(player1, player2);
-    // });
-    // await tx.prove();
-    // const res = await tx.sign([zkAppPrivateKey, player1Key]);
+    console.log('start game', proof.toJSON());
+    const [x, y] = [Field(0), Field(0)];
+    const signature = Signature.create(player1Key, [x, y]);
 
-    // console.log('proofs', await res.prove());
-    // if (proofs?.length > 0) {
-    //   const lastProof = proofs[proofs.length - 1];
+    const newMove = await zkApp.play(state, player1, signature, x, y, proof);
+    console.log('new move', newMove.toJSON());
 
-    //   if (lastProof) {
-    //     const proofElem = new SelfProof<GameState, void>({
-    //       proof: lastProof,
-    //       publicInput: lastProof.publicInput as unknown as GameState,
-    //       maxProofsVerified: 1,
-    //       publicOutput: lastProof.publicOutput,
-    //     });
-    //     // move
-    //     const [x, y] = [Field(0), Field(0)];
-    //     const signature = Signature.create(player1Key, [x, y]);
-    //     txn = await Mina.transaction(player1, async () => {
-    //       zkApp.play(player1, signature, x, y, proofElem);
-    //     });
-    //     await txn.prove();
+    const [x2, y2] = [Field(0), Field(1)];
+    const signature2 = Signature.create(player2Key, [x2, y2]);
 
-    //     const actualState = zkApp.gameState.get();
-    //     console.log('state', actualState);
-
-    //     // check next player
-    //     let isNextPlayer2 = actualState.nextIsPlayer2;
-    //     expect(isNextPlayer2).toEqual(Bool(true));
-    //   }
-    // }
+    const move2 = await zkApp.play(
+      newMove.publicOutput,
+      player2,
+      signature2,
+      x2,
+      y2,
+      newMove
+    );
+    console.log('move2', move2.toJSON());
   });
 });

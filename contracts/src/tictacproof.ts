@@ -152,24 +152,31 @@ class Board {
 const TicTacProof = Experimental.ZkProgram({
   // all infos are store in game state
   publicInput: GameState,
+  publicOutput: GameState,
 
   methods: {
     init: {
       privateInputs: [],
-      method(publicInput: GameState) {
+      method(publicInput: GameState): GameState {
         publicInput.board.assertEquals(Field(0));
         publicInput.player1.assertEquals(PublicKey.empty());
         publicInput.player2.assertEquals(PublicKey.empty());
         publicInput.gameDone.assertEquals(Bool(false));
         publicInput.nextIsPlayer2.assertEquals(Bool(false));
+        return publicInput;
       },
     },
 
     startGame: {
       privateInputs: [PublicKey, PublicKey],
-      method(publicInput: GameState, player1: PublicKey, player2: PublicKey) {
+      method(
+        publicInput: GameState,
+        player1: PublicKey,
+        player2: PublicKey
+      ): GameState {
         publicInput.player1.assertEquals(player1);
         publicInput.player2.assertEquals(player2);
+        return publicInput;
       },
     },
 
@@ -181,15 +188,16 @@ const TicTacProof = Experimental.ZkProgram({
         signature: Signature,
         x: Field,
         y: Field,
-        earlierProof: SelfProof<GameState, void>
-      ) {
+        earlierProof: SelfProof<GameState, GameState>
+      ): GameState {
         // verify everything is correct
         earlierProof.verify();
-        earlierProof.publicInput.board.assertEquals(publicInput.board);
-        earlierProof.publicInput.player1.assertEquals(publicInput.player1);
-        earlierProof.publicInput.player2.assertEquals(publicInput.player2);
-        earlierProof.publicInput.gameDone.assertEquals(publicInput.gameDone);
-        earlierProof.publicInput.nextIsPlayer2.assertEquals(
+
+        earlierProof.publicOutput.board.assertEquals(publicInput.board);
+        earlierProof.publicOutput.player1.assertEquals(publicInput.player1);
+        earlierProof.publicOutput.player2.assertEquals(publicInput.player2);
+        earlierProof.publicOutput.gameDone.assertEquals(publicInput.gameDone);
+        earlierProof.publicOutput.nextIsPlayer2.assertEquals(
           publicInput.nextIsPlayer2
         );
 
@@ -203,8 +211,8 @@ const TicTacProof = Experimental.ZkProgram({
         signature.verify(pubkey, [x, y]).assertTrue();
 
         // ensure player is valid
-        const player1 = earlierProof.publicInput.player1;
-        const player2 = earlierProof.publicInput.player2;
+        const player1 = publicInput.player1;
+        const player2 = publicInput.player2;
         Bool.or(pubkey.equals(player1), pubkey.equals(player2)).assertTrue();
 
         // 3. Make sure that its our turn,
@@ -214,14 +222,14 @@ const TicTacProof = Experimental.ZkProgram({
         const player = pubkey.equals(player2); // player 1 is false, player 2 is true
 
         // ensure its their turn
-        const nextPlayer = earlierProof.publicInput.nextIsPlayer2;
+        const nextPlayer = publicInput.nextIsPlayer2;
         nextPlayer.assertEquals(player);
 
         // set the next player
         publicInput.nextIsPlayer2 = player.not();
 
         // 4. get and deserialize the board
-        let board = new Board(earlierProof.publicInput.board);
+        let board = new Board(publicInput.board);
 
         // 5. update the board (and the state) with our move
         x.equals(Field(0))
@@ -239,6 +247,8 @@ const TicTacProof = Experimental.ZkProgram({
         // 6. did I just win? If so, update the state as well
         const won = board.checkWinner();
         publicInput.gameDone = won;
+
+        return publicInput;
       },
     },
   },
