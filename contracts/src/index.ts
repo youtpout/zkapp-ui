@@ -1,3 +1,4 @@
 import { Add } from './Add.js';
+import { TicTacToe, Board } from './tictactoe.js';
 
-export { Add };
+export { Add, TicTacToe, Board };
