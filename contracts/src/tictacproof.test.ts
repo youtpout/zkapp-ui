@@ -45,7 +45,9 @@ describe('tictacproof', () => {
   it('deploys tictactoe & accepts a correct move', async () => {
     const zkApp = TicTacProof;
 
-    await TicTacProof.compile();
+    const { verificationKey } = await TicTacProof.compile();
+
+    console.log('verificationKey', verificationKey);
 
     const state: GameState = {
       board: Field(0),
