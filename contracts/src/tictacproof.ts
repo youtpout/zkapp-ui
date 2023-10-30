@@ -14,9 +14,10 @@ import {
   Signature,
   Struct,
   SelfProof,
+  Experimental,
 } from 'o1js';
 
-export { Board, TicTacProof };
+export { Board, TicTacProof, GameState };
 
 function Optional<T>(type: Provable<T>) {
   return class Optional_ extends Struct({ isSome: Bool, value: type }) {
@@ -32,7 +33,7 @@ function Optional<T>(type: Provable<T>) {
 
 class OptionalBool extends Optional(Bool) {}
 
-export class GameState extends Struct({
+class GameState extends Struct({
   player1: PublicKey,
   player2: PublicKey,
   gameDone: Bool,
@@ -148,110 +149,97 @@ class Board {
   }
 }
 
-class TicTacProof extends SmartContract {
-  // all infos are stire in game state
-  @state(GameState) gameState = State<GameState>();
+const TicTacProof = Experimental.ZkProgram({
+  // all infos are store in game state
+  publicInput: GameState,
 
-  init() {
-    super.init();
-    this.gameState.set({
-      player1: PublicKey.empty(),
-      player2: PublicKey.empty(),
-      gameDone: Bool(true),
-      board: Field(0),
-      nextIsPlayer2: Bool(false),
-    });
-  }
+  methods: {
+    init: {
+      privateInputs: [],
+      method(publicInput: GameState) {
+        publicInput.board.assertEquals(Field(0));
+        publicInput.player1.assertEquals(PublicKey.empty());
+        publicInput.player2.assertEquals(PublicKey.empty());
+        publicInput.gameDone.assertEquals(Bool(false));
+        publicInput.nextIsPlayer2.assertEquals(Bool(false));
+      },
+    },
 
-  @method startGame(play1: PublicKey, play2: PublicKey) {
-    // const actualState = this.gameState.get();
+    startGame: {
+      privateInputs: [PublicKey, PublicKey],
+      method(publicInput: GameState, player1: PublicKey, player2: PublicKey) {
+        publicInput.player1.assertEquals(player1);
+        publicInput.player2.assertEquals(player2);
+      },
+    },
 
-    // if (
-    //   actualState.player1 == play1 ||
-    //   actualState.player2 == play1 ||
-    //   actualState.player1 == play2 ||
-    //   actualState.player2 == play2
-    // ) {
-    // }
+    play: {
+      privateInputs: [PublicKey, Signature, Field, Field, SelfProof],
+      method(
+        publicInput: GameState,
+        pubkey: PublicKey,
+        signature: Signature,
+        x: Field,
+        y: Field,
+        earlierProof: SelfProof<GameState, void>
+      ) {
+        // verify everything is correct
+        earlierProof.verify();
+        earlierProof.publicInput.board.assertEquals(publicInput.board);
+        earlierProof.publicInput.player1.assertEquals(publicInput.player1);
+        earlierProof.publicInput.player2.assertEquals(publicInput.player2);
+        earlierProof.publicInput.gameDone.assertEquals(publicInput.gameDone);
+        earlierProof.publicInput.nextIsPlayer2.assertEquals(
+          publicInput.nextIsPlayer2
+        );
 
-    // initial gaming state
-    this.gameState.set({
-      player1: play1,
-      player2: play2,
-      gameDone: Bool(true),
-      board: Field(0),
-      nextIsPlayer2: Bool(false),
-    });
-  }
+        // 1. if the game is already finished, abort.
+        publicInput.gameDone.assertEquals(Bool(false)); // precondition on this.gameDone
 
-  // board:
-  //  x  0  1  2
-  // y +----------
-  // 0 | x  x  x
-  // 1 | x  x  x
-  // 2 | x  x  x
-  @method play(
-    pubkey: PublicKey,
-    signature: Signature,
-    x: Field,
-    y: Field,
-    earlierProof: SelfProof<GameState, void>
-  ) {
-    // verify everything is correct
-    earlierProof.verify();
-    const actualState = this.gameState.getAndAssertEquals();
-    this.gameState.assertEquals(earlierProof.publicInput);
+        // 2. ensure that we know the private key associated to the public key
+        //    and that our public key is known to the zkApp
 
-    // 1. if the game is already finished, abort.
-    actualState.gameDone.assertEquals(Bool(false)); // precondition on this.gameDone
+        // ensure player owns the associated private key
+        signature.verify(pubkey, [x, y]).assertTrue();
 
-    // 2. ensure that we know the private key associated to the public key
-    //    and that our public key is known to the zkApp
+        // ensure player is valid
+        const player1 = earlierProof.publicInput.player1;
+        const player2 = earlierProof.publicInput.player2;
+        Bool.or(pubkey.equals(player1), pubkey.equals(player2)).assertTrue();
 
-    // ensure player owns the associated private key
-    signature.verify(pubkey, [x, y]).assertTrue();
+        // 3. Make sure that its our turn,
+        //    and set the state for the next player
 
-    // ensure player is valid
-    const player1 = actualState.player1;
-    const player2 = actualState.player2;
-    Bool.or(pubkey.equals(player1), pubkey.equals(player2)).assertTrue();
+        // get player token
+        const player = pubkey.equals(player2); // player 1 is false, player 2 is true
 
-    // 3. Make sure that its our turn,
-    //    and set the state for the next player
+        // ensure its their turn
+        const nextPlayer = earlierProof.publicInput.nextIsPlayer2;
+        nextPlayer.assertEquals(player);
 
-    // get player token
-    const player = pubkey.equals(player2); // player 1 is false, player 2 is true
+        // set the next player
+        publicInput.nextIsPlayer2 = player.not();
 
-    // ensure its their turn
-    const nextPlayer = actualState.nextIsPlayer2;
-    nextPlayer.assertEquals(player);
+        // 4. get and deserialize the board
+        let board = new Board(earlierProof.publicInput.board);
 
-    // 4. get and deserialize the board
-    let board = new Board(actualState.board); // precondition that links this.board.get() to the actual on-chain state
+        // 5. update the board (and the state) with our move
+        x.equals(Field(0))
+          .or(x.equals(Field(1)))
+          .or(x.equals(Field(2)))
+          .assertTrue();
+        y.equals(Field(0))
+          .or(y.equals(Field(1)))
+          .or(y.equals(Field(2)))
+          .assertTrue();
 
-    // 5. update the board (and the state) with our move
-    x.equals(Field(0))
-      .or(x.equals(Field(1)))
-      .or(x.equals(Field(2)))
-      .assertTrue();
-    y.equals(Field(0))
-      .or(y.equals(Field(1)))
-      .or(y.equals(Field(2)))
-      .assertTrue();
+        board.update(x, y, player);
+        publicInput.board = board.serialize();
 
-    board.update(x, y, player);
-    const boardUpdated = board.serialize();
-
-    // 6. did I just win? If so, update the state as well
-    const won = board.checkWinner();
-
-    // update state
-    this.gameState.set({
-      player1: actualState.player1,
-      player2: actualState.player2,
-      gameDone: won,
-      board: boardUpdated,
-      nextIsPlayer2: player.not(),
-    });
-  }
-}
+        // 6. did I just win? If so, update the state as well
+        const won = board.checkWinner();
+        publicInput.gameDone = won;
+      },
+    },
+  },
+});
