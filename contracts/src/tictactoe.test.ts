@@ -41,6 +41,7 @@ describe('tictactoe', () => {
   it('deploys tictactoe & accepts a correct move', async () => {
     const zkApp = new TicTacToe(zkAppAddress);
 
+    await TicTacToe.compile();
     // deploy
     let txn = await Mina.transaction(player1, () => {
       AccountUpdate.fundNewAccount(player1);

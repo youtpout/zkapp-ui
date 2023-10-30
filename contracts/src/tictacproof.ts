@@ -240,6 +240,7 @@ class TicTacProof extends SmartContract {
       .assertTrue();
 
     board.update(x, y, player);
+    const boardUpdated = board.serialize();
 
     // 6. did I just win? If so, update the state as well
     const won = board.checkWinner();
@@ -249,7 +250,7 @@ class TicTacProof extends SmartContract {
       player1: actualState.player1,
       player2: actualState.player2,
       gameDone: won,
-      board: board.serialize(),
+      board: boardUpdated,
       nextIsPlayer2: player.not(),
     });
   }
