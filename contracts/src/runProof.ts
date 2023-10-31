@@ -49,6 +49,8 @@ console.log('\n\n====== DEPLOYING TOKEN ======\n\n');
 
 console.log('after transaction');
 
+console.time("run");
+
 const state: GameState = {
   board: Field(0),
   player1,
@@ -78,6 +80,7 @@ const firstMove = await makeMove(startGame, player1, player1Key, 0, 0);
 b = firstMove.publicOutput.board;
 new Board(b).printState();
 
+console.timeEnd("run");
 /*
 // play
 console.log('\n\n====== SECOND MOVE ======\n\n');
