@@ -17,7 +17,7 @@ import {
   Experimental,
 } from 'o1js';
 
-export { Board, TicTacProof, GameState };
+export { Board, TicTacProof, GameState, TicTacProgram };
 
 function Optional<T>(type: Provable<T>) {
   return class Optional_ extends Struct({ isSome: Bool, value: type }) {
@@ -149,7 +149,7 @@ class Board {
   }
 }
 
-const TicTacProof = Experimental.ZkProgram({
+const TicTacProgram = Experimental.ZkProgram({
   // all infos are store in game state
   publicInput: GameState,
   publicOutput: GameState,
@@ -253,3 +253,5 @@ const TicTacProof = Experimental.ZkProgram({
     },
   },
 });
+
+class TicTacProof extends Experimental.ZkProgram.Proof(TicTacProgram) {}

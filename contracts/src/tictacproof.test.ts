@@ -1,4 +1,4 @@
-import { TicTacProof, GameState } from './tictacproof';
+import { TicTacProof, GameState, TicTacProgram } from './tictacproof';
 import {
   Field,
   Bool,
@@ -43,11 +43,9 @@ describe('tictacproof', () => {
   // });
 
   it('deploys tictactoe & accepts a correct move', async () => {
-    const zkApp = TicTacProof;
+    const zkApp = TicTacProgram;
 
-    const { verificationKey } = await TicTacProof.compile();
-
-    console.log('verificationKey', verificationKey);
+    const { verificationKey } = await TicTacProgram.compile();
 
     const state: GameState = {
       board: Field(0),
@@ -58,12 +56,10 @@ describe('tictacproof', () => {
     };
     const proof = await zkApp.startGame(state, player1, player2);
 
-    console.log('start game', proof.toJSON());
     const [x, y] = [Field(0), Field(0)];
     const signature = Signature.create(player1Key, [x, y]);
 
     const newMove = await zkApp.play(state, player1, signature, x, y, proof);
-    console.log('new move', newMove.toJSON());
 
     const [x2, y2] = [Field(0), Field(1)];
     const signature2 = Signature.create(player2Key, [x2, y2]);
@@ -76,6 +72,5 @@ describe('tictacproof', () => {
       y2,
       newMove
     );
-    console.log('move2', move2.toJSON());
   });
 });
