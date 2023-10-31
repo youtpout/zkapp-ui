@@ -20,7 +20,7 @@ import { GameState, TicTacProof } from './tictacproof';
 
 const tokenSymbol = 'WTTP';
 const mintAmount = 1;
-export class BasicTokenContract extends SmartContract {
+export class WinToken extends SmartContract {
   @state(UInt64) totalAmountInCirculation = State<UInt64>();
 
   deploy(args: DeployArgs) {
