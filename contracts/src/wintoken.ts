@@ -13,6 +13,8 @@ import {
   Bool,
   Circuit,
   Provable,
+  Account,
+  Field,
 } from 'o1js';
 import { GameState, TicTacProof } from './tictacproof';
 
@@ -43,10 +45,10 @@ export class BasicTokenContract extends SmartContract {
 
   // can only mint for winner
   @method mint(receiverAddress: PublicKey, proof: TicTacProof) {
-    let totalAmountInCirculation = this.totalAmountInCirculation.get();
-    this.totalAmountInCirculation.assertEquals(totalAmountInCirculation);
+    let account = Account(receiverAddress, this.token.id);
+    let balance = account.balance.getAndAssertEquals();
 
-    let newTotalAmountInCirculation = totalAmountInCirculation.add(mintAmount);
+    balance.assertLessThan(UInt64.from(1), 'Already a win token');
 
     proof.verify();
 
@@ -69,6 +71,9 @@ export class BasicTokenContract extends SmartContract {
       amount: mintAmount,
     });
 
+    const totalAmountInCirculation =
+      this.totalAmountInCirculation.getAndAssertEquals();
+    let newTotalAmountInCirculation = totalAmountInCirculation.add(mintAmount);
     this.totalAmountInCirculation.set(newTotalAmountInCirculation);
   }
 }
