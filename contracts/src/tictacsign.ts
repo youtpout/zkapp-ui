@@ -50,24 +50,6 @@ class Board {
     this.board = board;
   }
 
-  fromMove(movePlayer1: Field, movePlayer2: Field) {
-    const move1 = movePlayer1.toString();
-    const move2 = movePlayer2.toString();
-    const max = Math.max(move1.length, move2.length);
-    for (let index = 0; index < max - 1; index++) {
-      if (move1.length > index) {
-        const move = parseInt(move1[index]);
-        if (move == 0) {
-          throw "bad move";
-        }
-      }
-      if (move2.length > index) {
-
-      }
-
-    }
-  }
-
   serialize(): Field {
     let isPlayed = [];
     let player = [];
@@ -157,25 +139,6 @@ class Board {
     return won;
   }
 }
-
-class PlayState extends Struct({
-  index: Field,
-  x: Field,
-  y: Field,
-  sign: Signature
-}) { }
-
-
-class GameInfo extends Struct({
-  player1: PublicKey,
-  player2: PublicKey,
-  player1Moves: Field,
-  player2Moves: Field,
-  player1Signature: Signature,
-  player2Signature: Signature
-}) { }
-
-
 
 class TicTacSign extends SmartContract {
   // The board is serialized as a single field element
