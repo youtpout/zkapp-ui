@@ -4,16 +4,13 @@
 
 import {
   Field,
-  State,
   PublicKey,
-  SmartContract,
-  state,
-  method,
   Bool,
   Provable,
   Signature,
   Struct,
   SelfProof,
+  ZkProgram,
   Experimental,
 } from 'o1js';
 
@@ -149,7 +146,8 @@ class Board {
   }
 }
 
-const TicTacProgram = Experimental.ZkProgram({
+const TicTacProgram = ZkProgram({
+  name: 'TicTacToe',
   // all infos are store in game state
   publicInput: GameState,
   publicOutput: GameState,
@@ -254,5 +252,5 @@ const TicTacProgram = Experimental.ZkProgram({
   },
 });
 
-let TicTacProof_ = Experimental.ZkProgram.Proof(TicTacProgram);
+let TicTacProof_ = ZkProgram.Proof(TicTacProgram);
 class TicTacProof extends TicTacProof_ {}
