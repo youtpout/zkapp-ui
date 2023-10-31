@@ -19,8 +19,7 @@ import {
   Signature,
   Bool,
 } from 'o1js';
-import { TicTacProgram, TicTacProof, Board, GameState } from './tictacproof.js';
-//import { WinToken } from './wintoken.js';
+import { TicTacProgram, TicTacProof, Board, WinToken } from './tictacproof.js';
 
 let Local = Mina.LocalBlockchain({ proofsEnabled: true });
 Mina.setActiveInstance(Local);
@@ -33,33 +32,25 @@ const zkAppPrivateKey = PrivateKey.random();
 const zkAppPublicKey = zkAppPrivateKey.toPublicKey();
 
 const zkApp = TicTacProgram;
-// const zkToken = new WinToken(zkAppPublicKey);
-// const { verificationKey } = await WinToken.compile();
 await TicTacProgram.compile();
+const { verificationKey } = await WinToken.compile();
+const zkToken = new WinToken(zkAppPublicKey);
 
 // Create a new instance of the contract
 console.log('\n\n====== DEPLOYING TOKEN ======\n\n');
-// const txn = await Mina.transaction(player1, () => {
-//   AccountUpdate.fundNewAccount(player1);
-//   //AccountUpdate.fundNewAccount(player2);
-//   //zkToken.deploy({ verificationKey, zkappKey: zkAppPrivateKey });
-// });
-// await txn.prove();
-// await txn.sign([player1Key]).send();
+const txn = await Mina.transaction(player1, () => {
+  AccountUpdate.fundNewAccount(player1);
+  //AccountUpdate.fundNewAccount(player2);
+  zkToken.deploy({ verificationKey, zkappKey: zkAppPrivateKey });
+});
+await txn.prove();
+await txn.sign([player1Key, zkAppPrivateKey]).send();
 
 console.log('after transaction');
 
-console.time("run");
+console.time('run');
 
-const state: GameState = {
-  board: Field(0),
-  player1,
-  player2,
-  gameDone: Bool(false),
-  nextIsPlayer2: Bool(false),
-};
-
-const startGame = await zkApp.startGame(state, player1, player2);
+const startGame = await zkApp.startGame(player1, player2);
 
 // initial state
 let b = startGame.publicOutput.board;
@@ -80,7 +71,7 @@ const firstMove = await makeMove(startGame, player1, player1Key, 0, 0);
 b = firstMove.publicOutput.board;
 new Board(b).printState();
 
-console.timeEnd("run");
+console.timeEnd('run');
 /*
 // play
 console.log('\n\n====== SECOND MOVE ======\n\n');
@@ -126,12 +117,5 @@ async function makeMove(
 ) {
   const [x, y] = [Field(x0), Field(y0)];
   const signature = Signature.create(currentPlayerKey, [x, y]);
-  return await zkApp.play(
-    oldProof.publicOutput,
-    currentPlayer,
-    signature,
-    x,
-    y,
-    oldProof
-  );
+  return await zkApp.play(currentPlayer, signature, x, y, oldProof);
 }

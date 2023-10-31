@@ -56,28 +56,21 @@ describe('tictacproof', () => {
     };
 
     console.time('start game');
-    const proof = await zkApp.startGame(state, player1, player2);
+    const proof = await zkApp.startGame(player1, player2);
     console.timeEnd('start game');
 
     console.time('move 1');
     const [x, y] = [Field(0), Field(0)];
     const signature = Signature.create(player1Key, [x, y]);
 
-    const newMove = await zkApp.play(state, player1, signature, x, y, proof);
+    const newMove = await zkApp.play(player1, signature, x, y, proof);
     console.timeEnd('move 1');
 
     console.time('move 2');
     const [x2, y2] = [Field(0), Field(1)];
     const signature2 = Signature.create(player2Key, [x2, y2]);
 
-    const move2 = await zkApp.play(
-      newMove.publicOutput,
-      player2,
-      signature2,
-      x2,
-      y2,
-      newMove
-    );
+    const move2 = await zkApp.play(player2, signature2, x2, y2, newMove);
     console.timeEnd('move 2');
   });
 });

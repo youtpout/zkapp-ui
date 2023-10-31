@@ -11,10 +11,17 @@ import {
   Struct,
   SelfProof,
   ZkProgram,
-  Experimental,
+  SmartContract,
+  state,
+  Account,
+  DeployArgs,
+  State,
+  UInt64,
+  method,
+  Permissions,
 } from 'o1js';
 
-export { Board, GameState, TicTacProgram, TicTacProof };
+export { Board, GameState, TicTacProgram, TicTacProof, WinToken };
 
 function Optional<T>(type: Provable<T>) {
   return class Optional_ extends Struct({ isSome: Bool, value: type }) {
@@ -147,60 +154,53 @@ class Board {
 }
 
 const TicTacProgram = ZkProgram({
-  name: 'TicTacToe',
+  name: 'TicTacToe Proof',
   // all infos are store in game state
-  publicInput: GameState,
   publicOutput: GameState,
 
   methods: {
     init: {
       privateInputs: [],
-      method(publicInput: GameState): GameState {
-        publicInput.board.assertEquals(Field(0));
-        publicInput.player1.assertEquals(PublicKey.empty());
-        publicInput.player2.assertEquals(PublicKey.empty());
-        publicInput.gameDone.assertEquals(Bool(false));
-        publicInput.nextIsPlayer2.assertEquals(Bool(false));
-        return publicInput;
+      method(): GameState {
+        return {
+          board: Field(0),
+          player1: PublicKey.empty(),
+          player2: PublicKey.empty(),
+          gameDone: Bool(false),
+          nextIsPlayer2: Bool(false),
+        };
       },
     },
 
     startGame: {
       privateInputs: [PublicKey, PublicKey],
-      method(
-        publicInput: GameState,
-        player1: PublicKey,
-        player2: PublicKey
-      ): GameState {
-        publicInput.player1.assertEquals(player1);
-        publicInput.player2.assertEquals(player2);
-        return publicInput;
+      method(player1: PublicKey, player2: PublicKey): GameState {
+        return {
+          board: Field(0),
+          player1,
+          player2,
+          gameDone: Bool(false),
+          nextIsPlayer2: Bool(false),
+        };
       },
     },
 
     play: {
       privateInputs: [PublicKey, Signature, Field, Field, SelfProof],
       method(
-        publicInput: GameState,
         pubkey: PublicKey,
         signature: Signature,
         x: Field,
         y: Field,
-        earlierProof: SelfProof<GameState, GameState>
+        earlierProof: SelfProof<void, GameState>
       ): GameState {
         // verify everything is correct
         earlierProof.verify();
 
-        earlierProof.publicOutput.board.assertEquals(publicInput.board);
-        earlierProof.publicOutput.player1.assertEquals(publicInput.player1);
-        earlierProof.publicOutput.player2.assertEquals(publicInput.player2);
-        earlierProof.publicOutput.gameDone.assertEquals(publicInput.gameDone);
-        earlierProof.publicOutput.nextIsPlayer2.assertEquals(
-          publicInput.nextIsPlayer2
-        );
+        let input = earlierProof.publicOutput;
 
         // 1. if the game is already finished, abort.
-        publicInput.gameDone.assertEquals(Bool(false)); // precondition on this.gameDone
+        input.gameDone.assertEquals(Bool(false)); // precondition on this.gameDone
 
         // 2. ensure that we know the private key associated to the public key
         //    and that our public key is known to the zkApp
@@ -209,8 +209,8 @@ const TicTacProgram = ZkProgram({
         signature.verify(pubkey, [x, y]).assertTrue();
 
         // ensure player is valid
-        const player1 = publicInput.player1;
-        const player2 = publicInput.player2;
+        const player1 = input.player1;
+        const player2 = input.player2;
         Bool.or(pubkey.equals(player1), pubkey.equals(player2)).assertTrue();
 
         // 3. Make sure that its our turn,
@@ -220,14 +220,14 @@ const TicTacProgram = ZkProgram({
         const player = pubkey.equals(player2); // player 1 is false, player 2 is true
 
         // ensure its their turn
-        const nextPlayer = publicInput.nextIsPlayer2;
+        const nextPlayer = input.nextIsPlayer2;
         nextPlayer.assertEquals(player);
 
         // set the next player
-        publicInput.nextIsPlayer2 = player.not();
+        input.nextIsPlayer2 = player.not();
 
         // 4. get and deserialize the board
-        let board = new Board(publicInput.board);
+        let board = new Board(input.board);
 
         // 5. update the board (and the state) with our move
         x.equals(Field(0))
@@ -240,13 +240,13 @@ const TicTacProgram = ZkProgram({
           .assertTrue();
 
         board.update(x, y, player);
-        publicInput.board = board.serialize();
+        input.board = board.serialize();
 
         // 6. did I just win? If so, update the state as well
         const won = board.checkWinner();
-        publicInput.gameDone = won;
+        input.gameDone = won;
 
-        return publicInput;
+        return input;
       },
     },
   },
@@ -254,3 +254,62 @@ const TicTacProgram = ZkProgram({
 
 let TicTacProof_ = ZkProgram.Proof(TicTacProgram);
 class TicTacProof extends TicTacProof_ {}
+
+const tokenSymbol = 'WINTTT';
+const mintAmount = 1;
+class WinToken extends SmartContract {
+  @state(UInt64) totalAmountInCirculation = State<UInt64>();
+
+  deploy(args: DeployArgs) {
+    super.deploy(args);
+
+    const permissionToEdit = Permissions.proof();
+
+    this.account.permissions.set({
+      ...Permissions.default(),
+      editState: permissionToEdit,
+      setTokenSymbol: permissionToEdit,
+      send: permissionToEdit,
+      receive: permissionToEdit,
+    });
+  }
+
+  @method init() {
+    super.init();
+    this.account.tokenSymbol.set(tokenSymbol);
+    this.totalAmountInCirculation.set(UInt64.zero);
+  }
+
+  // can only mint for winner
+  @method mint(receiverAddress: PublicKey, proof: TicTacProof) {
+    let account = Account(receiverAddress, this.token.id);
+    let balance = account.balance.getAndAssertEquals();
+
+    balance.assertLessThan(UInt64.from(1), 'Already a win token');
+
+    proof.verify();
+
+    // check if it's a winner proof
+    proof.publicOutput.gameDone.assertEquals(Bool(true));
+
+    // if next is player2 so player1 win
+    const winner = Provable.if<PublicKey>(
+      proof.publicOutput.nextIsPlayer2,
+      proof.publicOutput.player1,
+      proof.publicOutput.player2
+    );
+
+    // check you are the winner
+    winner.assertEquals(receiverAddress);
+
+    this.token.mint({
+      address: receiverAddress,
+      amount: mintAmount,
+    });
+
+    const totalAmountInCirculation =
+      this.totalAmountInCirculation.getAndAssertEquals();
+    let newTotalAmountInCirculation = totalAmountInCirculation.add(mintAmount);
+    this.totalAmountInCirculation.set(newTotalAmountInCirculation);
+  }
+}
