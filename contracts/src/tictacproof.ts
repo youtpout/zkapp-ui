@@ -159,19 +159,6 @@ const TicTacProgram = ZkProgram({
   publicOutput: GameState,
 
   methods: {
-    init: {
-      privateInputs: [],
-      method(): GameState {
-        return {
-          board: Field(0),
-          player1: PublicKey.empty(),
-          player2: PublicKey.empty(),
-          gameDone: Bool(false),
-          nextIsPlayer2: Bool(false),
-        };
-      },
-    },
-
     startGame: {
       privateInputs: [PublicKey, PublicKey],
       method(player1: PublicKey, player2: PublicKey): GameState {
