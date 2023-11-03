@@ -7,6 +7,16 @@ import {
   AccountUpdate,
   Signature,
 } from 'o1js';
+import { BinableBigint } from 'o1js/dist/node/bindings/lib/provable-bigint';
+import { BinableString } from 'o1js/src/bindings/lib/binable';
+import { base58 } from 'o1js/src/lib/base58';
+import { sha256 } from 'js-sha256';
+import { Scalar } from 'o1js/dist/node/provable/curve-bigint';
+import { bytesToBigInt } from 'o1js/dist/node/bindings/crypto/bigint-helpers';
+import { sign } from 'o1js/dist/node/mina-signer/src/signature';
+import { Hash, HashInput } from 'o1js/dist/node/provable/poseidon-bigint';
+
+//jest.useFakeTimers();
 
 const alphabet =
   '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'.split('');
@@ -92,6 +102,53 @@ function toBase58(bytes: number[] | Uint8Array) {
   return base58Digits.map((x) => alphabet[Number(x)]).join('');
 }
 
+function fromBase58Check(base58: string, versionByte: number) {
+  // throws on invalid character
+  let bytes = fromBase58(base58);
+  // check checksum
+  let checksum = bytes.slice(-4);
+  let originalBytes = bytes.slice(0, -4);
+  let actualChecksum = computeChecksum(originalBytes);
+  if (!arrayEqual(checksum, actualChecksum))
+    throw Error('fromBase58Check: invalid checksum');
+  // check version byte
+  if (originalBytes[0] !== versionByte)
+    throw Error(
+      `fromBase58Check: input version byte ${versionByte} does not match encoded version byte ${originalBytes[0]}`
+    );
+  // return result
+  return originalBytes.slice(1);
+}
+
+function fromBase58(base58: string) {
+  let base58Digits = [...base58].map((c) => {
+    let digit = inverseAlphabet[c];
+    if (digit === undefined) throw Error('fromBase58: invalid character');
+    return BigInt(digit);
+  });
+  let z = 0;
+  while (base58Digits[z] === 0n) z++;
+  let digits = changeBase(base58Digits.reverse(), 58n, 256n).reverse();
+  digits = Array(z).fill(0n).concat(digits);
+  return digits.map(Number);
+}
+
+function arrayEqual(a: unknown[], b: unknown[]) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+function computeChecksum(input: number[] | Uint8Array) {
+  let hash1 = sha256.create();
+  hash1.update(input);
+  let hash2 = sha256.create();
+  hash2.update(hash1.array());
+  return hash2.array().slice(0, 4);
+}
+
 /*
  * This file specifies how to test the `Add` example smart contract. It is safe to delete this file and replace
  * with your own tests.
@@ -109,12 +166,32 @@ describe('Add', () => {
     const privateKey = PrivateKey.fromBase58(privKey);
     const publickKey = privateKey.toPublicKey();
 
+    publickKey.toJSON();
+
+    console.log('pubkey', publickKey.x);
+    console.log('privkey', privateKey.toBase58());
+
     let encoded = new TextEncoder().encode('HelloWorld');
     const res = toBase58(encoded);
     console.log('HelloWorld', res);
 
+    const pk = fromBase58Check(privKey, 90);
+    console.log('pk', pk);
+
+    const bInt = bytesToBigInt(pk);
+
+    const scal = Scalar.fromBigint(bInt);
+
+    console.log('scal', scal);
+
     const field = Field(123456);
     const signature = Signature.create(privateKey, [field]);
+
+    const signature2 = sign(
+      { fields: [123456n] },
+      privateKey.toBigInt(),
+      'testnet'
+    );
 
     const pubSign = publickKey.toFields();
 
