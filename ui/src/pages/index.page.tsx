@@ -19,8 +19,25 @@ export default function Home() {
     creatingTransaction: false
   });
 
+  
+  const [val, setVal] = useState(2);
+  useEffect(() => {
+     (window as any).f = setVal;
+  }, []);
+
+  useEffect(()=>{
+    (window as any).hello = Home;
+    
+  }) 
+
+  const hello = ()=>{
+    console.log("hello");
+}
+
+
   const [displayText, setDisplayText] = useState('');
   const [transactionlink, setTransactionLink] = useState('');
+
 
   // -------------------------------------------------------
   // Do Setup
@@ -246,6 +263,7 @@ export default function Home() {
         <button className={styles.card} onClick={onRefreshCurrentNum}>
           Get Latest State
         </button>
+        {val}
       </div>
     );
   }
