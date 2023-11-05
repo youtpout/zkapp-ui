@@ -11,10 +11,15 @@ import { BinableBigint } from 'o1js/dist/node/bindings/lib/provable-bigint';
 import { BinableString } from 'o1js/src/bindings/lib/binable';
 import { base58 } from 'o1js/src/lib/base58';
 import { sha256 } from 'js-sha256';
-import { Scalar } from 'o1js/dist/node/provable/curve-bigint';
+import {
+  Scalar,
+  PrivateKey as PrivateKey2,
+} from 'o1js/dist/node/provable/curve-bigint';
 import { bytesToBigInt } from 'o1js/dist/node/bindings/crypto/bigint-helpers';
-import { sign } from 'o1js/dist/node/mina-signer/src/signature';
+import { sign, verify } from 'o1js/dist/node/mina-signer/src/signature';
+import Client from 'o1js/dist/node/mina-signer/MinaSigner';
 import { Hash, HashInput } from 'o1js/dist/node/provable/poseidon-bigint';
+import { PublicKey as PublicKey2 } from 'o1js/dist/node/provable/curve-bigint.js';
 
 //jest.useFakeTimers();
 
@@ -166,6 +171,8 @@ describe('Add', () => {
     const privateKey = PrivateKey.fromBase58(privKey);
     const publickKey = privateKey.toPublicKey();
 
+    const testPub = PublicKey.fromBase58(pubKey);
+
     publickKey.toJSON();
 
     console.log('pubkey', publickKey.x);
@@ -193,6 +200,11 @@ describe('Add', () => {
       'testnet'
     );
 
+    const client = new Client({ network: 'mainnet' });
+    const keys = client.genKeys();
+    const pKey2 = PrivateKey2.fromBase58(privKey);
+    const signed = client.signMessage('Hello', privKey);
+
     const pubSign = publickKey.toFields();
 
     pubSign.forEach((x) => {
@@ -211,9 +223,16 @@ describe('Add', () => {
       signatureBase58: signature.toBase58(),
     });
 
-    const verify = signature
+    const verify1 = signature
       .verify(PublicKey.fromBase58(pubKey), [field])
       .toBoolean();
+
+    const verify2 = verify(
+      signature2,
+      { fields: [123456n] },
+      PublicKey2.fromBase58(pubKey),
+      'testnet'
+    );
 
     expect(verify).toEqual(true);
   });
