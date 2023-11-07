@@ -160,6 +160,10 @@ describe('Tictactsign', () => {
 
     expect(amount.toBigInt()).toEqual(2n);
     expect(amount2.toBigInt()).toEqual(1699392008n);
+
+    const tx3 = getReward(UInt64.from(15));
+    // if we timestamp is lower than actual it will fail
+    await expect(tx3).rejects.toThrow();
   });
 
   async function getReward(timestamp: UInt64) {

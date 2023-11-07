@@ -307,14 +307,11 @@ class SaveToken extends SmartContract {
     // we can only mint if they are less token in the bag
     balance.assertLessThan(amount);
 
-    this.token.burn({
-      address: player,
-      amount: balance,
-    });
+    const mintAmount = amount.sub(balance);
 
     this.token.mint({
       address: player,
-      amount: amount,
+      amount: mintAmount,
     });
   }
 }
