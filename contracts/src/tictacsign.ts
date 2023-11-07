@@ -25,7 +25,7 @@ import { Authorization } from 'o1js/dist/node/lib/account_update';
 
 import { sign } from 'o1js/dist/node/mina-signer/src/signature';
 
-export { Board, WinToken };
+export { Board, WinToken, SaveToken };
 
 function Optional<T>(type: Provable<T>) {
   return class Optional_ extends Struct({ isSome: Bool, value: type }) {
@@ -174,14 +174,11 @@ const mintAmount = 1;
 class WinToken extends SmartContract {
   @state(UInt64) totalAmountInCirculation = State<UInt64>();
   @state(PublicKey) saveTokenAddress = State<PublicKey>();
-  @state(PublicKey) adminAddress = State<PublicKey>();
 
   deploy(args: DeployArgs) {
     super.deploy(args);
 
-    const permissionToEdit = Permissions.proof();
-
-    this.adminAddress.set(this.sender);
+    const permissionToEdit = Permissions.proofOrSignature();
 
     this.account.permissions.set({
       ...Permissions.default(),
@@ -191,19 +188,15 @@ class WinToken extends SmartContract {
       receive: permissionToEdit,
     });
   }
-
-  @method setSaveContractAddress(sAddress: PublicKey) {
-    // only admin can update it
-    const sender = this.sender;
-    const admin = this.adminAddress.getAndAssertEquals();
-    sender.assertEquals(admin);
-    this.saveTokenAddress.set(sAddress);
-  }
-
   @method init() {
     super.init();
     this.account.tokenSymbol.set(tokenSymbol);
     this.totalAmountInCirculation.set(UInt64.zero);
+  }
+
+  @method setSaveContractAddress(sAddress: PublicKey) {
+    // only zkapp can update it
+    this.saveTokenAddress.set(sAddress);
   }
 
   // can only mint for winner
@@ -265,8 +258,6 @@ class SaveToken extends SmartContract {
     super.deploy(args);
 
     const permissionToEdit = Permissions.proof();
-
-    this.adminAddress.set(this.sender);
 
     this.account.permissions.set({
       ...Permissions.default(),
