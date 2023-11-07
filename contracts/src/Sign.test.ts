@@ -234,6 +234,6 @@ describe('Add', () => {
       'testnet'
     );
 
-    expect(verify).toEqual(true);
+    expect(PublicKey).toEqual(true);
   });
 });

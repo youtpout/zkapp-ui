@@ -22,10 +22,16 @@ import { TicTacToe, Board } from './tictactoe.js';
 
 let Local = Mina.LocalBlockchain({ proofsEnabled: false });
 Mina.setActiveInstance(Local);
-const [
-  { publicKey: player1, privateKey: player1Key },
-  { publicKey: player2, privateKey: player2Key },
-] = Local.testAccounts;
+const [{ publicKey: player1, privateKey: player1Key }] = Local.testAccounts;
+
+const privKey = 'EKDtctFSZuDJ8SXuWcbXHot57gZDtu7dNSAZNZvXek8KF8q6jV8K';
+const pubKey = 'B62qj5tBbE2xyu9k4r7G5npAGpbU1JDBkZm85WCVDMdCrHhS2v2Dy2y';
+
+Local.addAccount(PublicKey.fromBase58(pubKey), '300');
+const { publicKey: player2, privateKey: player2Key } = {
+  publicKey: PublicKey.fromBase58(pubKey),
+  privateKey: PrivateKey.fromBase58(privKey),
+};
 
 const zkAppPrivateKey = PrivateKey.random();
 const zkAppPublicKey = zkAppPrivateKey.toPublicKey();
@@ -113,9 +119,17 @@ async function makeMove(
   y0: number
 ) {
   const [x, y] = [Field(x0), Field(y0)];
+  let signature: any;
   const txn = await Mina.transaction(currentPlayer, async () => {
-    const signature = Signature.create(currentPlayerKey, [x, y]);
+    signature = Signature.create(currentPlayerKey, [x, y]);
     zkApp.play(currentPlayer, signature, x, y);
+  });
+  console.log('move', {
+    currentPlayer: currentPlayer.toBase58(),
+    currentPlayerKey: currentPlayerKey.toBase58(),
+    signature: signature!.toBase58(),
+    fieldX: x.toBigInt(),
+    fieldY: y.toBigInt(),
   });
   await txn.prove();
   await txn.sign([currentPlayerKey]).send();
