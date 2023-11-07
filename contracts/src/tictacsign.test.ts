@@ -6,6 +6,7 @@ import {
   PublicKey,
   AccountUpdate,
   Signature,
+  Account,
 } from 'o1js';
 import { SaveToken, WinToken } from './tictacsign';
 
@@ -94,6 +95,10 @@ describe('Tictactsign', () => {
   it('set save address', async () => {
     await localDeploy();
 
+    const oldAddress = await zkApp.saveTokenAddress.get();
+    const address0 = PrivateKey.fromBigInt(0n);
+    expect(oldAddress.toBase58()).toEqual(address0.toPublicKey().toBase58());
+
     const sign = Signature.create(zkAppPrivateKey, zkAppAddress2.toFields());
     const txn = await Mina.transaction(deployerAccount, () => {
       zkApp.setSaveContractAddress(sign, zkAppAddress2);
@@ -104,5 +109,24 @@ describe('Tictactsign', () => {
     const newAddress = await zkApp.saveTokenAddress.get();
 
     expect(zkAppAddress2.toBase58()).toEqual(newAddress.toBase58());
+  });
+
+  it('get reward', async () => {
+    await localDeploy();
+
+    const sign = Signature.create(zkAppPrivateKey, zkAppAddress2.toFields());
+    const txn = await Mina.transaction(deployerAccount, () => {
+      zkApp.setSaveContractAddress(sign, zkAppAddress2);
+    });
+    await txn.prove();
+    await txn.sign([deployerKey]).send();
+    /*
+    const txm = await Mina.transaction(deployerAccount, () => {});
+    await txm.prove();
+    await txm.sign([deployerKey, zkAppPrivateKey, zkAppPrivateKey]).send();
+
+    let account = Account(player1, zkApp.token.id);
+    let amount = await account.balance.get();
+    console.log('amount', amount.toBigInt());*/
   });
 });
