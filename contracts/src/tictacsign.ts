@@ -4,19 +4,28 @@
 
 import {
   Field,
-  State,
   PublicKey,
-  SmartContract,
-  state,
-  method,
   Bool,
   Provable,
   Signature,
   Struct,
+  SelfProof,
+  ZkProgram,
+  SmartContract,
+  state,
+  Account,
+  DeployArgs,
+  State,
+  UInt64,
+  method,
+  Permissions,
+  Poseidon,
 } from 'o1js';
+import { Authorization } from 'o1js/dist/node/lib/account_update';
+
 import { sign } from 'o1js/dist/node/mina-signer/src/signature';
 
-export { Board, TicTacSign };
+export { Board, WinToken };
 
 function Optional<T>(type: Provable<T>) {
   return class Optional_ extends Struct({ isSome: Bool, value: type }) {
@@ -30,7 +39,7 @@ function Optional<T>(type: Provable<T>) {
   };
 }
 
-class OptionalBool extends Optional(Bool) { }
+class OptionalBool extends Optional(Bool) {}
 
 class Board {
   board: OptionalBool[][];
@@ -140,90 +149,169 @@ class Board {
   }
 }
 
-class TicTacSign extends SmartContract {
-  // The board is serialized as a single field element
-  @state(Field) board = State<Field>();
-  // false -> player 1 | true -> player 2
-  @state(Bool) nextIsPlayer2 = State<Bool>();
-  // defaults to false, set to true when a player wins
-  @state(Bool) gameDone = State<Bool>();
-  // the two players who are allowed to play
-  @state(PublicKey) player1 = State<PublicKey>();
-  @state(PublicKey) player2 = State<PublicKey>();
+class GameState extends Struct({
+  player1: PublicKey,
+  player2: PublicKey,
+  board: Field,
+  nextIsPlayer2: Bool,
+  startTimeStamp: UInt64,
+}) {
+  hash(): Field {
+    return Poseidon.hash([
+      this.player1.x,
+      this.player1.isOdd.toField(),
+      this.player2.x,
+      this.player2.isOdd.toField(),
+      this.board,
+      this.nextIsPlayer2.toField(),
+      this.startTimeStamp.value,
+    ]);
+  }
+}
 
-  init() {
+const tokenSymbol = 'WINTTT';
+const mintAmount = 1;
+class WinToken extends SmartContract {
+  @state(UInt64) totalAmountInCirculation = State<UInt64>();
+  @state(PublicKey) saveTokenAddress = State<PublicKey>();
+  @state(PublicKey) adminAddress = State<PublicKey>();
+
+  deploy(args: DeployArgs) {
+    super.deploy(args);
+
+    const permissionToEdit = Permissions.proof();
+
+    this.adminAddress.set(this.sender);
+
+    this.account.permissions.set({
+      ...Permissions.default(),
+      editState: permissionToEdit,
+      setTokenSymbol: permissionToEdit,
+      send: permissionToEdit,
+      receive: permissionToEdit,
+    });
+  }
+
+  @method setSaveContractAddress(sAddress: PublicKey) {
+    // only admin can update it
+    const sender = this.sender;
+    const admin = this.adminAddress.getAndAssertEquals();
+    sender.assertEquals(admin);
+    this.saveTokenAddress.set(sAddress);
+  }
+
+  @method init() {
     super.init();
-    this.gameDone.set(Bool(true));
-    this.player1.set(PublicKey.empty());
-    this.player2.set(PublicKey.empty());
+    this.account.tokenSymbol.set(tokenSymbol);
+    this.totalAmountInCirculation.set(UInt64.zero);
   }
 
-  @method startGame(player1: PublicKey, player2: PublicKey) {
-    // you can only start a new game if the current game is done
-    this.gameDone.assertEquals(Bool(true));
-    this.gameDone.set(Bool(false));
-    // set players
-    this.player1.set(player1);
-    this.player2.set(player2);
-    // reset board
-    this.board.set(Field(0));
-    // player 1 starts
-    this.nextIsPlayer2.set(Bool(false));
+  // can only mint for winner
+  private mint(receiverAddress: PublicKey) {
+    this.token.mint({
+      address: receiverAddress,
+      amount: mintAmount,
+    });
+
+    const totalAmountInCirculation =
+      this.totalAmountInCirculation.getAndAssertEquals();
+    let newTotalAmountInCirculation = totalAmountInCirculation.add(mintAmount);
+    this.totalAmountInCirculation.set(newTotalAmountInCirculation);
   }
 
-  // board:
-  //  x  0  1  2
-  // y +----------
-  // 0 | x  x  x
-  // 1 | x  x  x
-  // 2 | x  x  x
-  @method play(pubkey: PublicKey, signature: Signature, x: Field, y: Field) {
-    // 1. if the game is already finished, abort.
-    this.gameDone.assertEquals(Bool(false)); // precondition on this.gameDone
-
-    // 2. ensure that we know the private key associated to the public key
-    //    and that our public key is known to the zkApp
-
-    // ensure player owns the associated private key
-    signature.verify(pubkey, [x, y]).assertTrue();
+  @method getReward(
+    pubkey1: PublicKey,
+    signature1: Signature,
+    pubkey2: PublicKey,
+    signature2: Signature,
+    gameState: GameState
+  ): void {
+    const sender = this.sender;
+    // ensure player sign this game
+    signature1.verify(pubkey1, [gameState.hash()]).assertTrue();
+    signature2.verify(pubkey2, [gameState.hash()]).assertTrue();
 
     // ensure player is valid
-    const player1 = this.player1.getAndAssertEquals();
-    const player2 = this.player2.getAndAssertEquals();
-    Bool.or(pubkey.equals(player1), pubkey.equals(player2)).assertTrue();
+    const player1 = gameState.player1;
+    const player2 = gameState.player2;
+    Bool.or(pubkey1.equals(player1), pubkey2.equals(player2)).assertTrue();
+    pubkey1.equals(pubkey2).assertFalse();
 
-    // 3. Make sure that its our turn,
-    //    and set the state for the next player
-
-    // get player token
-    const player = pubkey.equals(player2); // player 1 is false, player 2 is true
-
-    // ensure its their turn
-    const nextPlayer = this.nextIsPlayer2.getAndAssertEquals();
-    nextPlayer.assertEquals(player);
-
-    // set the next player
-    this.nextIsPlayer2.set(player.not());
-
-    // 4. get and deserialize the board
-    this.board.assertEquals(this.board.get()); // precondition that links this.board.get() to the actual on-chain state
-    let board = new Board(this.board.get());
-
-    // 5. update the board (and the state) with our move
-    x.equals(Field(0))
-      .or(x.equals(Field(1)))
-      .or(x.equals(Field(2)))
-      .assertTrue();
-    y.equals(Field(0))
-      .or(y.equals(Field(1)))
-      .or(y.equals(Field(2)))
-      .assertTrue();
-
-    board.update(x, y, player);
-    this.board.set(board.serialize());
-
+    let board = new Board(gameState.board);
     // 6. did I just win? If so, update the state as well
     const won = board.checkWinner();
-    this.gameDone.set(won);
+    won.assertTrue();
+
+    const winner = Provable.if<PublicKey>(
+      gameState.nextIsPlayer2,
+      gameState.player1,
+      gameState.player2
+    );
+
+    winner.assertEquals(sender);
+    const address = this.saveTokenAddress.getAndAssertEquals();
+    const saveContract = new SaveToken(address);
+    saveContract.update(winner, gameState.startTimeStamp);
+    this.mint(sender);
+  }
+}
+
+const saveToken = 'Save';
+class SaveToken extends SmartContract {
+  @state(PublicKey) winTokenAddress = State<PublicKey>();
+  @state(PublicKey) adminAddress = State<PublicKey>();
+
+  deploy(args: DeployArgs) {
+    super.deploy(args);
+
+    const permissionToEdit = Permissions.proof();
+
+    this.adminAddress.set(this.sender);
+
+    this.account.permissions.set({
+      ...Permissions.default(),
+      editState: permissionToEdit,
+      setTokenSymbol: permissionToEdit,
+      send: permissionToEdit,
+      receive: permissionToEdit,
+    });
+  }
+
+  @method init() {
+    super.init();
+    this.account.tokenSymbol.set(saveToken);
+  }
+
+  @method setWinContractAddress(sAddress: PublicKey) {
+    // only admin can update it
+    const sender = this.sender;
+    const admin = this.adminAddress.getAndAssertEquals();
+    sender.assertEquals(admin);
+    this.winTokenAddress.set(sAddress);
+  }
+
+  // we use this method to check if an user don't reuse past timestamp
+  // we store timestamp as an amount
+  @method update(receiverAddress: PublicKey, amount: UInt64) {
+    // only wintoken can call this address
+    const sender = this.sender;
+    const winToken = this.winTokenAddress.getAndAssertEquals();
+    winToken.assertEquals(sender);
+
+    let account = Account(receiverAddress, this.token.id);
+    let balance = account.balance.getAndAssertEquals();
+
+    // we can only mint if they are already more tokens
+    balance.assertGreaterThan(amount);
+
+    this.token.burn({
+      address: receiverAddress,
+      amount: balance,
+    });
+
+    this.token.mint({
+      address: receiverAddress,
+      amount: amount,
+    });
   }
 }
