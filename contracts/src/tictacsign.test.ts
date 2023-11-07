@@ -123,25 +123,74 @@ describe('Tictactsign', () => {
     await txn.prove();
     await txn.sign([deployerKey]).send();
 
+    await getReward(UInt64.from(1699392007));
+
+    let account = Account(player1, zkApp.token.id);
+    let amount = await account.balance.get();
+    let account2 = Account(player1, zkApp2.token.id);
+    let amount2 = await account2.balance.get();
+
+    expect(amount.toBigInt()).toEqual(1n);
+    expect(amount2.toBigInt()).toEqual(1699392007n);
+  });
+
+  it('second get reward failed', async () => {
+    await localDeploy();
+
+    const sign = Signature.create(zkAppPrivateKey, zkAppAddress2.toFields());
+    const txn = await Mina.transaction(deployerAccount, () => {
+      zkApp.setSaveContractAddress(sign, zkAppAddress2);
+    });
+    await txn.prove();
+    await txn.sign([deployerKey]).send();
+
+    await getReward(UInt64.from(1699392007));
+
+    const tx2 = getReward(UInt64.from(1699392007));
+    // if we reuse timestamp it will fail
+    await expect(tx2).rejects.toThrow();
+
+    // we increment timestamp is success
+    await getReward(UInt64.from(1699392008));
+
+    let account = Account(player1, zkApp.token.id);
+    let amount = await account.balance.get();
+    let account2 = Account(player1, zkApp2.token.id);
+    let amount2 = await account2.balance.get();
+
+    expect(amount.toBigInt()).toEqual(2n);
+    expect(amount2.toBigInt()).toEqual(1699392008n);
+  });
+
+  async function getReward(timestamp: UInt64) {
     const gameState: GameState = new GameState({
       board: Field.from(70041),
       player1,
       player2,
       nextIsPlayer2: Bool(true),
-      startTimeStamp: UInt64.from(1699392007),
+      startTimeStamp: UInt64.from(timestamp),
     });
 
     const signPlayer1 = Signature.create(player1Key, [gameState.hash()]);
     const signPlayer2 = Signature.create(player2Key, [gameState.hash()]);
 
-    const txm = await Mina.transaction(deployerAccount, () => {
+    let accountToUpdate = 0;
+    const account1 = Account(player1, zkApp.token.id);
+    const isNew1 = await account1.isNew.get().toBoolean();
+    if (isNew1) {
+      accountToUpdate++;
+    }
+    const account2 = await Account(player1, zkApp2.token.id);
+    const isNew2 = await account2.isNew.get().toBoolean();
+    if (isNew2) {
+      accountToUpdate++;
+    }
+
+    const txm = await Mina.transaction(player1, () => {
+      AccountUpdate.fundNewAccount(player1, accountToUpdate);
       zkApp.getReward(player1, signPlayer1, player2, signPlayer2, gameState);
     });
     await txm.prove();
-    await txm.sign([deployerKey]).send();
-
-    let account = Account(player1, zkApp.token.id);
-    let amount = await account.balance.get();
-    console.log('amount', amount.toBigInt());
-  });
+    await txm.sign([player1Key]).send();
+  }
 });

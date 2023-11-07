@@ -243,7 +243,7 @@ class WinToken extends SmartContract {
     pubkey1.equals(pubkey2).assertFalse();
 
     let board = new Board(gameState.board);
-    // 6. did I just win? If so, update the state as well
+    // did someone just win? If so, mont token for him
     const won = board.checkWinner();
     won.assertTrue();
 
