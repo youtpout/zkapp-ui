@@ -25,7 +25,7 @@ import { Authorization } from 'o1js/dist/node/lib/account_update';
 
 import { sign } from 'o1js/dist/node/mina-signer/src/signature';
 
-export { Board, WinToken, SaveToken };
+export { Board, GameState, WinToken, SaveToken };
 
 function Optional<T>(type: Provable<T>) {
   return class Optional_ extends Struct({ isSome: Bool, value: type }) {
@@ -156,6 +156,16 @@ class GameState extends Struct({
   nextIsPlayer2: Bool,
   startTimeStamp: UInt64,
 }) {
+  constructor(value: {
+    player1: PublicKey;
+    player2: PublicKey;
+    board: Field;
+    nextIsPlayer2: Bool;
+    startTimeStamp: UInt64;
+  }) {
+    super(value);
+  }
+
   hash(): Field {
     return Poseidon.hash([
       this.player1.x,
@@ -222,7 +232,6 @@ class WinToken extends SmartContract {
     signature2: Signature,
     gameState: GameState
   ): void {
-    const sender = this.sender;
     // ensure player sign this game
     signature1.verify(pubkey1, [gameState.hash()]).assertTrue();
     signature2.verify(pubkey2, [gameState.hash()]).assertTrue();
@@ -244,17 +253,21 @@ class WinToken extends SmartContract {
       gameState.player2
     );
 
-    winner.assertEquals(sender);
+    const signature = Provable.if<Signature>(
+      gameState.nextIsPlayer2,
+      signature1,
+      signature2
+    );
+
     const address = this.saveTokenAddress.getAndAssertEquals();
     const saveContract = new SaveToken(address);
-    saveContract.update(winner, gameState.startTimeStamp);
-    this.mint(sender);
+    saveContract.update(winner, signature, gameState);
+    this.mint(winner);
   }
 }
 
 const saveToken = 'Save';
 class SaveToken extends SmartContract {
-  @state(PublicKey) winTokenAddress = State<PublicKey>();
   @state(PublicKey) adminAddress = State<PublicKey>();
 
   deploy(args: DeployArgs) {
@@ -276,35 +289,31 @@ class SaveToken extends SmartContract {
     this.account.tokenSymbol.set(saveToken);
   }
 
-  @method setWinContractAddress(sAddress: PublicKey) {
-    // only admin can update it
-    const sender = this.sender;
-    const admin = this.adminAddress.getAndAssertEquals();
-    sender.assertEquals(admin);
-    this.winTokenAddress.set(sAddress);
-  }
-
   // we use this method to check if an user don't reuse past timestamp
   // we store timestamp as an amount
-  @method update(receiverAddress: PublicKey, amount: UInt64) {
-    // only wintoken can call this address
-    const sender = this.sender;
-    const winToken = this.winTokenAddress.getAndAssertEquals();
-    winToken.assertEquals(sender);
+  @method update(
+    player: PublicKey,
+    signature: Signature,
+    gameState: GameState
+  ) {
+    // check signature to update for the player
+    signature.verify(player, [gameState.hash()]).assertTrue();
 
-    let account = Account(receiverAddress, this.token.id);
+    let account = Account(player, this.token.id);
     let balance = account.balance.getAndAssertEquals();
 
-    // we can only mint if they are already more tokens
-    balance.assertGreaterThan(amount);
+    let amount = gameState.startTimeStamp;
+
+    // we can only mint if they are less token in the bag
+    balance.assertLessThan(amount);
 
     this.token.burn({
-      address: receiverAddress,
+      address: player,
       amount: balance,
     });
 
     this.token.mint({
-      address: receiverAddress,
+      address: player,
       amount: amount,
     });
   }

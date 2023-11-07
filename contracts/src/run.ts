@@ -110,6 +110,8 @@ new Board(b).printState();
 let isNextPlayer2 = zkApp.nextIsPlayer2.get();
 
 console.log('did someone win?', isNextPlayer2 ? 'Player 1!' : 'Player 2!');
+
+console.log('board', b.toJSON());
 // cleanup
 
 async function makeMove(

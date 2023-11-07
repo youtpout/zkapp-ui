@@ -7,8 +7,10 @@ import {
   AccountUpdate,
   Signature,
   Account,
+  UInt64,
+  Bool,
 } from 'o1js';
-import { SaveToken, WinToken } from './tictacsign';
+import { SaveToken, WinToken, GameState } from './tictacsign';
 
 /*
  * This file specifies how to test the `Add` example smart contract. It is safe to delete this file and replace
@@ -120,13 +122,26 @@ describe('Tictactsign', () => {
     });
     await txn.prove();
     await txn.sign([deployerKey]).send();
-    /*
-    const txm = await Mina.transaction(deployerAccount, () => {});
+
+    const gameState: GameState = new GameState({
+      board: Field.from(70041),
+      player1,
+      player2,
+      nextIsPlayer2: Bool(true),
+      startTimeStamp: UInt64.from(1699392007),
+    });
+
+    const signPlayer1 = Signature.create(player1Key, [gameState.hash()]);
+    const signPlayer2 = Signature.create(player2Key, [gameState.hash()]);
+
+    const txm = await Mina.transaction(deployerAccount, () => {
+      zkApp.getReward(player1, signPlayer1, player2, signPlayer2, gameState);
+    });
     await txm.prove();
-    await txm.sign([deployerKey, zkAppPrivateKey, zkAppPrivateKey]).send();
+    await txm.sign([deployerKey]).send();
 
     let account = Account(player1, zkApp.token.id);
     let amount = await account.balance.get();
-    console.log('amount', amount.toBigInt());*/
+    console.log('amount', amount.toBigInt());
   });
 });
