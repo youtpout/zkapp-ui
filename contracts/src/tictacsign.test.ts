@@ -81,19 +81,28 @@ describe('Tictactsign', () => {
     await txn2.sign([deployerKey, zkAppPrivateKey2]).send();
   }
 
+  it('cant save address', async () => {
+    await localDeploy();
+
+    const sign = Signature.create(deployerKey, zkAppAddress2.toFields());
+    const txn = Mina.transaction(deployerAccount, () => {
+      zkApp.setSaveContractAddress(sign, zkAppAddress2);
+    });
+    await expect(txn).rejects.toThrow();
+  });
+
   it('set save address', async () => {
     await localDeploy();
 
-    const init_txn = await Mina.transaction(deployerAccount, () => {
-      zkApp.init();
-    });
-    await init_txn.prove();
-    await init_txn.sign([deployerKey, zkAppPrivateKey]).send();
-
+    const sign = Signature.create(zkAppPrivateKey, zkAppAddress2.toFields());
     const txn = await Mina.transaction(deployerAccount, () => {
-      zkApp.setSaveContractAddress(zkAppAddress2);
+      zkApp.setSaveContractAddress(sign, zkAppAddress2);
     });
     await txn.prove();
-    await txn.sign().send();
+    await txn.sign([deployerKey]).send();
+
+    const newAddress = await zkApp.saveTokenAddress.get();
+
+    expect(zkAppAddress2.toBase58()).toEqual(newAddress.toBase58());
   });
 });

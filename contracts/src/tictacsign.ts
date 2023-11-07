@@ -178,7 +178,7 @@ class WinToken extends SmartContract {
   deploy(args: DeployArgs) {
     super.deploy(args);
 
-    const permissionToEdit = Permissions.proofOrSignature();
+    const permissionToEdit = Permissions.proof();
 
     this.account.permissions.set({
       ...Permissions.default(),
@@ -194,8 +194,11 @@ class WinToken extends SmartContract {
     this.totalAmountInCirculation.set(UInt64.zero);
   }
 
-  @method setSaveContractAddress(sAddress: PublicKey) {
+  @method setSaveContractAddress(signature: Signature, sAddress: PublicKey) {
     // only zkapp can update it
+    const owner = this.token.tokenOwner;
+    signature.verify(owner, sAddress.toFields()).assertTrue('Invalid Signer');
+
     this.saveTokenAddress.set(sAddress);
   }
 
