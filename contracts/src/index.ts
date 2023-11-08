@@ -1,4 +1,4 @@
 import { Add } from './Add.js';
-import { TicTacToe, Board } from './tictactoe.js';
+import { WinToken, Board } from './tictacsign.js';
 
-export { Add, TicTacToe, Board };
+export { Add, WinToken, Board };

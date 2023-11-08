@@ -7,9 +7,6 @@ import {
   AccountUpdate,
   Signature,
 } from 'o1js';
-import { BinableBigint } from 'o1js/dist/node/bindings/lib/provable-bigint';
-import { BinableString } from 'o1js/src/bindings/lib/binable';
-import { base58 } from 'o1js/src/lib/base58';
 import { sha256 } from 'js-sha256';
 import {
   Scalar,
@@ -18,7 +15,6 @@ import {
 import { bytesToBigInt } from 'o1js/dist/node/bindings/crypto/bigint-helpers';
 import { sign, verify } from 'o1js/dist/node/mina-signer/src/signature';
 import Client from 'o1js/dist/node/mina-signer/MinaSigner';
-import { Hash, HashInput } from 'o1js/dist/node/provable/poseidon-bigint';
 import { PublicKey as PublicKey2 } from 'o1js/dist/node/provable/curve-bigint.js';
 
 //jest.useFakeTimers();
