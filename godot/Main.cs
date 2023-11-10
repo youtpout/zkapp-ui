@@ -9,10 +9,13 @@ public class Main : Control
     public static bool IsPlayerOTurn = false;
     public static bool GameEnd = true;
 
+    private long startGame = 0;
+
     private List<Tile> tiles = new List<Tile>();
     private Control gameOver;
     private Label lblGameOver;
     private Button btnGameOver;
+    private Button btnSend;
     // Declare member variables here. Examples:
     // private int a = 2;
     // private string b = "text";
@@ -23,13 +26,13 @@ public class Main : Control
         gameOver = GetNode<Control>("GameOver");
         lblGameOver = gameOver.GetNode<Label>("VBoxContainer/Label");
         btnGameOver = gameOver.GetNode<Button>("VBoxContainer/Button");
-
+        btnSend = gameOver.GetNode<Button>("VBoxContainer/Send");
         for (int i = 0; i < 9; i++)
         {
             var tile = GetNode<Tile>($"Board/Row{i / 3}/Tile{i}");
             tiles.Add(tile);
         }
-        GD.Print("size " + tiles.Count);
+        btnSend.Hide();
     }
 
     // Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -47,6 +50,7 @@ public class Main : Control
             {
                 case EnumWinner.PlayerX:
                     lblGameOver.Text = "You win";
+                    btnSend.Show();
                     break;
                 case EnumWinner.PlayerO:
                     lblGameOver.Text = "You loose";
@@ -65,6 +69,13 @@ public class Main : Control
         IsPlayerOTurn = false;
         tiles.ForEach(x => x.Reset());
         gameOver.Hide();
+        btnSend.Hide();
+        startGame = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
+    }
+
+    public void Send()
+    {
+
     }
 
     public EnumWinner CheckWin()

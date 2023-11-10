@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=2]
+[gd_scene load_steps=7 format=2]
 
 [ext_resource path="res://Main.cs" type="Script" id=1]
 [ext_resource path="res://Tile.tscn" type="PackedScene" id=2]
@@ -11,6 +11,10 @@ outline_color = Color( 0, 0, 0, 1 )
 font_data = ExtResource( 3 )
 
 [sub_resource type="DynamicFont" id=2]
+size = 48
+font_data = ExtResource( 3 )
+
+[sub_resource type="DynamicFont" id=3]
 size = 48
 font_data = ExtResource( 3 )
 
@@ -108,19 +112,28 @@ alignment = 1
 
 [node name="Label" type="Label" parent="GameOver/VBoxContainer"]
 margin_left = 97.0
-margin_top = 259.0
+margin_top = 236.0
 margin_right = 502.0
-margin_bottom = 295.0
+margin_bottom = 272.0
 size_flags_horizontal = 4
 custom_fonts/font = SubResource( 1 )
 text = "Welcome on TicTacToe Mina"
 
 [node name="Button" type="Button" parent="GameOver/VBoxContainer"]
-margin_top = 299.0
+margin_top = 276.0
 margin_right = 600.0
-margin_bottom = 341.0
+margin_bottom = 318.0
 custom_colors/font_color = Color( 1, 1, 1, 1 )
 custom_fonts/font = SubResource( 2 )
 text = "Start a New Game"
 
+[node name="Send" type="Button" parent="GameOver/VBoxContainer"]
+margin_top = 400.0
+margin_right = 600.0
+margin_bottom = 442.0
+custom_colors/font_color = Color( 1, 1, 1, 1 )
+custom_fonts/font = SubResource( 3 )
+text = "Send a proof of win to mina"
+
 [connection signal="button_up" from="GameOver/VBoxContainer/Button" to="." method="NewGame"]
+[connection signal="button_up" from="GameOver/VBoxContainer/Send" to="." method="Send"]
