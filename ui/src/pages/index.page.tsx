@@ -93,7 +93,7 @@ export default function Home() {
         setDisplayText('zkApp compiled...');
 
         const zkappPublicKey = PublicKey.fromBase58(
-          'B62qo2Be4Udo5EG1ux9yMJVkXe9Gz945cocN7Bn4W9DSYyeHZr1C3Ea'
+          'B62qrMWbGSH5Lky7P6c9Wre23xBBTRJUG6TNpZrLQVqJdW4m5uaHHdC'
         );
 
         await zkappWorkerClient.initZkappInstance(zkappPublicKey);
@@ -101,7 +101,7 @@ export default function Home() {
         console.log('Getting zkApp state...');
         setDisplayText('Getting zkApp state...');
         await zkappWorkerClient.fetchAccount({ publicKey: zkappPublicKey });
-        const currentNum = await zkappWorkerClient.getNum();
+        const currentNum = await zkappWorkerClient.getAmount(publicKey);
         console.log(`Current state in zkApp: ${currentNum.toString()}`);
         setDisplayText('');
 
@@ -194,7 +194,7 @@ export default function Home() {
     await state.zkappWorkerClient!.fetchAccount({
       publicKey: state.zkappPublicKey!
     });
-    const currentNum = await state.zkappWorkerClient!.getNum();
+    const currentNum = await state.zkappWorkerClient!.getAmount(state.publicKey!);
     setState({ ...state, currentNum });
     console.log(`Current state in zkApp: ${currentNum.toString()}`);
     setDisplayText('');
@@ -251,7 +251,7 @@ export default function Home() {
     mainContent = (
       <div style={{ justifyContent: 'center', alignItems: 'center' }}>
         <div className={styles.center} style={{ padding: 0 }}>
-          Current state in zkApp: {state.currentNum!.toString()}{' '}
+          Current win game in zkApp: {state.currentNum!.toString()}{' '}
         </div>
         <button
           className={styles.card}

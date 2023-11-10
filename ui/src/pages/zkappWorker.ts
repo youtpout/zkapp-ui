@@ -1,14 +1,14 @@
-import { Mina, PublicKey, fetchAccount } from 'o1js';
+import { Account, Mina, PublicKey, Signature, fetchAccount } from 'o1js';
 
 type Transaction = Awaited<ReturnType<typeof Mina.transaction>>;
 
 // ---------------------------------------------------------------------------------------
 
-import type { Add } from '../../../contracts/src/Add';
+import type { GameState, WinToken } from '../../../contracts/src/tictacsign';
 
 const state = {
-  Add: null as null | typeof Add,
-  zkapp: null as null | Add,
+  WinToken: null as null | typeof WinToken,
+  zkapp: null as null | WinToken,
   transaction: null as null | Transaction,
 };
 
@@ -23,11 +23,11 @@ const functions = {
     Mina.setActiveInstance(Berkeley);
   },
   loadContract: async (args: {}) => {
-    const { Add } = await import('../../../contracts/build/src/Add.js');
-    state.Add = Add;
+    const { WinToken } = await import('../../../contracts/build/src/tictacsign.js');
+    state.WinToken = WinToken;
   },
   compileContract: async (args: {}) => {
-    await state.Add!.compile();
+    await state.WinToken!.compile();
   },
   fetchAccount: async (args: { publicKey58: string }) => {
     const publicKey = PublicKey.fromBase58(args.publicKey58);
@@ -35,15 +35,22 @@ const functions = {
   },
   initZkappInstance: async (args: { publicKey58: string }) => {
     const publicKey = PublicKey.fromBase58(args.publicKey58);
-    state.zkapp = new state.Add!(publicKey);
+    state.zkapp = new state.WinToken!(publicKey);
   },
-  getNum: async (args: {}) => {
-    const currentNum = await state.zkapp!.num.get();
-    return JSON.stringify(currentNum.toJSON());
+  getAmount: async (player:string) => {
+    try{
+      const publicKey = PublicKey.fromBase58(player);
+      const amount = await Mina.getBalance(publicKey,state.zkapp?.token.id);
+      return JSON.stringify(amount.toJSON());
+    }
+    catch(ex){
+      console.log(ex);
+    }
+    return "0";
   },
-  createUpdateTransaction: async (args: {}) => {
+  createGetReward: async (player1: PublicKey,player2: PublicKey,sign1:Signature,sign2:Signature, gamestate:GameState) => {
     const transaction = await Mina.transaction(() => {
-      state.zkapp!.update();
+      state.zkapp!.getReward(player1,sign1,player2,sign2,gamestate);
     });
     state.transaction = transaction;
   },
