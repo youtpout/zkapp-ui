@@ -4,7 +4,6 @@ import ZkappWorkerClient from './zkappWorkerClient';
 import { PublicKey, Field } from 'o1js';
 import GradientBG from '../components/GradientBG.js';
 import styles from '../styles/Home.module.css';
-import ReactGodot from '@/components/react-godot';
 
 let transactionFee = 0.1;
 
@@ -26,21 +25,17 @@ export default function Home() {
   useEffect(() => {
     const win = (window as any);
     win.tictactoe = {account:"",game :  new win.Engine(GODOT_CONFIG)};
-    win.tictactoe?.game?.startGame().then();
-    
-    //win.tictactoe.game.setCanvasResizedOnStart(true);
   }, []);
 
-  useEffect(()=>{
-   
+  useEffect(()=>{   
     const win = (window as any);
-    if(state.hasBeenSetup && state.accountExists){
-      if(win.tictactoe){
+    if(state.accountExists && win.tictactoe){
+      console.log("acc",state.publicKey?.toBase58());
         win.tictactoe.account = state.publicKey?.toBase58();
-      }
+        win.tictactoe?.game?.startGame().then();
     }
     
-  },[state.hasBeenSetup,state.accountExists]) 
+  },[state.accountExists]) 
 
   const hello = ()=>{
     console.log("hello");

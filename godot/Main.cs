@@ -90,6 +90,8 @@ public class Main : Control
         {
             var tictactoe = JavaScript.GetInterface("tictactoe");
             var account = tictactoe.DynamicObject.account;
+            GD.Print("player account " + account);
+            player1Key = account;
         }
         catch (Exception ex)
         {
