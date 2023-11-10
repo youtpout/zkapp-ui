@@ -71,6 +71,10 @@ public class Main : Control
             }
             gameOver.Show();
         }
+        else if (IsPlayerOTurn)
+        {
+            IAMove();
+        }
     }
 
     public void NewGame()
@@ -84,11 +88,8 @@ public class Main : Control
 
         try
         {
-            var mina = JavaScript.GetInterface("mina");
-            var method = mina.DynamicObject.requestAccounts();
-            method.DynamicObject.then(playerCallback);
-
-
+            var tictactoe = JavaScript.GetInterface("tictactoe");
+            var account = tictactoe.DynamicObject.account;
         }
         catch (Exception ex)
         {
@@ -103,34 +104,152 @@ public class Main : Control
 
     public void Send()
     {
-        List<bool> isPlayed = new List<bool>();
-        List<bool> player = new List<bool>();
-        for (var i = 0; i < 3; i++)
+        try
         {
-            for (var j = 0; j < 3; j++)
+            List<bool> isPlayed = new List<bool>();
+            List<bool> player = new List<bool>();
+            for (var i = 0; i < 3; i++)
             {
-                int index = i + (j * 3);
-                bool played = this.tiles[index].TileState != EnumState.Unpressed;
-                bool isPlayer2 = this.tiles[index].TileState == EnumState.PlayerO;
-                isPlayed.Add(played);
-                player.Add(isPlayer2);
+                for (var j = 0; j < 3; j++)
+                {
+                    int index = i + (j * 3);
+                    bool played = this.tiles[index].TileState != EnumState.Unpressed;
+                    bool isPlayer2 = this.tiles[index].TileState == EnumState.PlayerO;
+                    isPlayed.Add(played);
+                    player.Add(isPlayer2);
+                }
             }
+
+            // serialize field like board game
+            var bytes = isPlayed.Concat(player).ToList().BitsToBytes().BytesToBigInt();
+
+            GameState state = new GameState()
+            {
+                Player1 = new PublicKey(player1Key),
+                Player2 = new PublicKey(player2Key),
+                Board = bytes,
+                NextIsPlayer2 = !IsPlayerOTurn,
+                StartTimeStamp = (ulong)startGame
+            };
+            var hash = state.Hash();
+
+            var signature = Signature.Sign(hash, player2Key, Network.Testnet);
+            var tictactoe = JavaScript.GetInterface("tictactoe");
+            var account = tictactoe.DynamicObject.send(state, signature);
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr(ex);
         }
 
-        // serialize field like board game
-        var bytes = isPlayed.Concat(player).ToList().BitsToBytes().BytesToBigInt();
 
-        GameState state = new GameState()
+    }
+
+    public void IAMove()
+    {
+        // IA mechanism if mid tile doesn't selected check it by default
+        if (tiles[4].TileState == EnumState.Unpressed)
         {
-            Player1 = new PublicKey(player1Key),
-            Player2 = new PublicKey(player2Key),
-            Board = bytes,
-            NextIsPlayer2 = !IsPlayerOTurn,
-            StartTimeStamp = (ulong)startGame
-        };
-        var hash = state.Hash();
+            tiles[4].OnClick();
+        }
+        else if (tiles.Where((x) => x.TileState == EnumState.PlayerX).Count() == 1)
+        {
+            // player X only check mid, check random position
+            var tilesEmpty = tiles.Where((x) => x.TileState == EnumState.Unpressed).ToArray();
+            var rand = new Random().Next(0, tilesEmpty.Length);
+            tilesEmpty[rand].OnClick();
+        }
+        else
+        {
+            // try to block move from Player X
+            if (tiles[0].TileState == EnumState.PlayerX)
+            {
+                if (tiles[1].TileState == EnumState.PlayerX)
+                {
+                    tiles[2].OnClick();
+                }
+                else if (tiles[2].TileState == EnumState.PlayerX)
+                {
+                    tiles[1].OnClick();
+                }
+                else if (tiles[4].TileState == EnumState.PlayerX)
+                {
+                    tiles[8].OnClick();
+                }
+                else if (tiles[8].TileState == EnumState.PlayerX)
+                {
+                    tiles[4].OnClick();
+                }
+                else if (tiles[3].TileState == EnumState.PlayerX)
+                {
+                    tiles[6].OnClick();
+                }
+                if (tiles[6].TileState == EnumState.PlayerX)
+                {
+                    tiles[3].OnClick();
+                }
+            }
+            else if (tiles[1].TileState == EnumState.PlayerX)
+            {
+                if (tiles[2].TileState == EnumState.PlayerX)
+                {
+                    tiles[0].OnClick();
+                }
+                else if (tiles[4].TileState == EnumState.PlayerX)
+                {
+                    tiles[7].OnClick();
+                }
+                else if (tiles[7].TileState == EnumState.PlayerX)
+                {
+                    tiles[4].OnClick();
+                }
+            }
+            else if (tiles[2].TileState == EnumState.PlayerX)
+            {
+                if (tiles[4].TileState == EnumState.PlayerX)
+                {
+                    tiles[6].OnClick();
+                }
+                else if (tiles[6].TileState == EnumState.PlayerX)
+                {
+                    tiles[4].OnClick();
+                }
+                else if (tiles[5].TileState == EnumState.PlayerX)
+                {
+                    tiles[8].OnClick();
+                }
+                else if (tiles[8].TileState == EnumState.PlayerX)
+                {
+                    tiles[5].OnClick();
+                }
+            }
+            else if (tiles[3].TileState == EnumState.PlayerX)
+            {
+                if (tiles[4].TileState == EnumState.PlayerX)
+                {
+                    tiles[5].OnClick();
+                }
+            }
+            else if (tiles[6].TileState == EnumState.PlayerX)
+            {
+                if (tiles[7].TileState == EnumState.PlayerX)
+                {
+                    tiles[8].OnClick();
+                }
+                else if (tiles[8].TileState == EnumState.PlayerX)
+                {
+                    tiles[7].OnClick();
+                }
+            }
 
-        var signature = Signature.Sign(hash, player2Key, Network.Testnet);
+            if (IsPlayerOTurn)
+            {
+                // if we check nothing and it IA turn use random check
+                var tilesEmpty = tiles.Where((x) => x.TileState == EnumState.Unpressed).ToArray();
+                var rand = new Random().Next(0, tilesEmpty.Length);
+                tilesEmpty[rand].OnClick();
+            }
+        }
     }
 
     public EnumWinner CheckWin()
