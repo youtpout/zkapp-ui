@@ -5,61 +5,76 @@
 [node name="Main" type="Control"]
 
 [node name="Board" type="VBoxContainer" parent="."]
-margin_right = 1024.0
+margin_left = 212.0
+margin_right = 812.0
 margin_bottom = 600.0
 
 [node name="Row0" type="HBoxContainer" parent="Board"]
 margin_right = 600.0
-margin_bottom = 200.0
+margin_bottom = 197.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 3
 
 [node name="Tile0" parent="Board/Row0" instance=ExtResource( 2 )]
-margin_right = 200.0
-margin_bottom = 200.0
+margin_right = 197.0
+margin_bottom = 197.0
+size_flags_horizontal = 3
 
 [node name="Tile1" parent="Board/Row0" instance=ExtResource( 2 )]
-margin_left = 200.0
-margin_right = 400.0
-margin_bottom = 200.0
+margin_left = 201.0
+margin_right = 398.0
+margin_bottom = 197.0
+size_flags_horizontal = 3
 
 [node name="Tile2" parent="Board/Row0" instance=ExtResource( 2 )]
-margin_left = 400.0
+margin_left = 402.0
 margin_right = 600.0
-margin_bottom = 200.0
+margin_bottom = 197.0
+size_flags_horizontal = 3
 
 [node name="Row1" type="HBoxContainer" parent="Board"]
-margin_top = 4.0
-margin_right = 1024.0
-margin_bottom = 4.0
+margin_top = 201.0
+margin_right = 600.0
+margin_bottom = 398.0
+size_flags_vertical = 3
 
 [node name="Tile3" parent="Board/Row1" instance=ExtResource( 2 )]
-margin_right = 0.0
-margin_bottom = 0.0
+margin_right = 197.0
+margin_bottom = 197.0
+size_flags_horizontal = 3
 
 [node name="Tile4" parent="Board/Row1" instance=ExtResource( 2 )]
-margin_left = 4.0
-margin_right = 4.0
-margin_bottom = 0.0
+margin_left = 201.0
+margin_right = 398.0
+margin_bottom = 197.0
+size_flags_horizontal = 3
 
 [node name="Tile5" parent="Board/Row1" instance=ExtResource( 2 )]
-margin_left = 8.0
-margin_right = 8.0
-margin_bottom = 0.0
+margin_left = 402.0
+margin_right = 600.0
+margin_bottom = 197.0
+size_flags_horizontal = 3
 
 [node name="Row2" type="HBoxContainer" parent="Board"]
-margin_top = 8.0
-margin_right = 1024.0
-margin_bottom = 8.0
+margin_top = 402.0
+margin_right = 600.0
+margin_bottom = 600.0
+size_flags_vertical = 3
 
 [node name="Tile6" parent="Board/Row2" instance=ExtResource( 2 )]
-margin_right = 0.0
-margin_bottom = 0.0
+margin_right = 197.0
+margin_bottom = 198.0
+size_flags_horizontal = 3
 
 [node name="Tile7" parent="Board/Row2" instance=ExtResource( 2 )]
-margin_left = 4.0
-margin_right = 4.0
-margin_bottom = 0.0
+margin_left = 201.0
+margin_right = 398.0
+margin_bottom = 198.0
+size_flags_horizontal = 3
 
 [node name="Tile8" parent="Board/Row2" instance=ExtResource( 2 )]
-margin_left = 8.0
-margin_right = 8.0
-margin_bottom = 0.0
+margin_left = 402.0
+margin_right = 600.0
+margin_bottom = 198.0
+size_flags_horizontal = 3
