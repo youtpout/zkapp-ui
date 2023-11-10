@@ -7,10 +7,12 @@ using System.Linq;
 public class Main : Control
 {
     public static bool IsPlayerOTurn = false;
-    public static bool GameEnd = false;
+    public static bool GameEnd = true;
 
     private List<Tile> tiles = new List<Tile>();
-
+    private Control gameOver;
+    private Label lblGameOver;
+    private Button btnGameOver;
     // Declare member variables here. Examples:
     // private int a = 2;
     // private string b = "text";
@@ -18,6 +20,10 @@ public class Main : Control
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
     {
+        gameOver = GetNode<Control>("GameOver");
+        lblGameOver = gameOver.GetNode<Label>("VBoxContainer/Label");
+        btnGameOver = gameOver.GetNode<Button>("VBoxContainer/Button");
+
         for (int i = 0; i < 9; i++)
         {
             var tile = GetNode<Tile>($"Board/Row{i / 3}/Tile{i}");
@@ -37,19 +43,39 @@ public class Main : Control
         GameEnd = winner != EnumWinner.NotFinish;
         if (GameEnd)
         {
-            GD.Print("Winner " + winner.ToString());
+            switch (winner)
+            {
+                case EnumWinner.PlayerX:
+                    lblGameOver.Text = "You win";
+                    break;
+                case EnumWinner.PlayerO:
+                    lblGameOver.Text = "You loose";
+                    break;
+                default:
+                    lblGameOver.Text = "Draw";
+                    break;
+            }
+            gameOver.Show();
         }
+    }
+
+    public void NewGame()
+    {
+        GameEnd = false;
+        IsPlayerOTurn = false;
+        tiles.ForEach(x => x.Reset());
+        gameOver.Hide();
     }
 
     public EnumWinner CheckWin()
     {
 
-        var horizontal1 = GetWinner((x, i) => i < 4);
+        var horizontal1 = GetWinner((x, i) => i < 3);
         if (horizontal1 != EnumWinner.NotFinish)
         {
             return horizontal1;
         }
-        var horizontal2 = GetWinner((x, i) => i > 3 && i < 6);
+        var horizontal2 = GetWinner((x, i) => i > 2 && i < 6);
         if (horizontal2 != EnumWinner.NotFinish)
         {
             return horizontal2;
