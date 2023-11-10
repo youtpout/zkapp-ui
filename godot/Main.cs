@@ -3,6 +3,8 @@ using GodotMina;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MinaSignerNet;
+using Microsoft.CSharp;
 
 public class Main : Control
 {
@@ -16,6 +18,12 @@ public class Main : Control
     private Label lblGameOver;
     private Button btnGameOver;
     private Button btnSend;
+
+    private string player1Key = string.Empty;
+    private string player2Key = "EKFdQ8aJ6jDViUKhQcaUrUAXcTuixCyBSFayS8xx9vCG8puUyGPG";
+
+    private JavaScriptObject playerCallback;
+
     // Declare member variables here. Examples:
     // private int a = 2;
     // private string b = "text";
@@ -23,6 +31,8 @@ public class Main : Control
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
     {
+        playerCallback = JavaScript.CreateCallback(this, "SetPlayer");
+
         gameOver = GetNode<Control>("GameOver");
         lblGameOver = gameOver.GetNode<Label>("VBoxContainer/Label");
         btnGameOver = gameOver.GetNode<Button>("VBoxContainer/Button");
@@ -71,11 +81,56 @@ public class Main : Control
         gameOver.Hide();
         btnSend.Hide();
         startGame = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
+
+        try
+        {
+            var mina = JavaScript.GetInterface("mina");
+            var method = mina.DynamicObject.requestAccounts();
+            method.DynamicObject.then(playerCallback);
+
+
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr(ex);
+        }
+    }
+
+    public void SetPlayer(JavaScriptObject accounts)
+    {
+        GD.Print("res SetPlayer" + accounts.DynamicObject[0][0]);
     }
 
     public void Send()
     {
+        List<bool> isPlayed = new List<bool>();
+        List<bool> player = new List<bool>();
+        for (var i = 0; i < 3; i++)
+        {
+            for (var j = 0; j < 3; j++)
+            {
+                int index = i + (j * 3);
+                bool played = this.tiles[index].TileState != EnumState.Unpressed;
+                bool isPlayer2 = this.tiles[index].TileState == EnumState.PlayerO;
+                isPlayed.Add(played);
+                player.Add(isPlayer2);
+            }
+        }
 
+        // serialize field like board game
+        var bytes = isPlayed.Concat(player).ToList().BitsToBytes().BytesToBigInt();
+
+        GameState state = new GameState()
+        {
+            Player1 = new PublicKey(player1Key),
+            Player2 = new PublicKey(player2Key),
+            Board = bytes,
+            NextIsPlayer2 = !IsPlayerOTurn,
+            StartTimeStamp = (ulong)startGame
+        };
+        var hash = state.Hash();
+
+        var signature = Signature.Sign(hash, player2Key, Network.Testnet);
     }
 
     public EnumWinner CheckWin()
