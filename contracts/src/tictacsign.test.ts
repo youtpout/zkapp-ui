@@ -1,4 +1,3 @@
-import { Add } from './Add';
 import {
   Field,
   Mina,
