@@ -77,6 +77,9 @@ jobs:
       - name: Install dependencies  
         working-directory: ui
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
+      - name: Install dependencies  
+        working-directory: contracts
+        run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
       - name: Build with Next.js
         working-directory: ui
         run: ${{ steps.detect-package-manager.outputs.runner }} next build
