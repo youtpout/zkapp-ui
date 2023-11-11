@@ -120,7 +120,12 @@ export default function Home() {
           'B62qrMWbGSH5Lky7P6c9Wre23xBBTRJUG6TNpZrLQVqJdW4m5uaHHdC'
         );
 
-        await zkappWorkerClient.initZkappInstance(zkappPublicKey);
+        const zkappSavePublicKey = PublicKey.fromBase58(
+          'B62qkR9Har8apahum18KggGtHbAiumoQ65b6uH4vukaqdh3LZCA9jt5'
+        );
+        
+
+        await zkappWorkerClient.initZkappInstance(zkappPublicKey, zkappSavePublicKey);
 
         console.log('Getting zkApp state...');
         setDisplayText('Getting zkApp state...');

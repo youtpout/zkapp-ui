@@ -10,6 +10,7 @@ const state = {
   WinToken: null as null | typeof WinToken,
   SaveToken: null as null | typeof SaveToken,
   zkapp: null as null | WinToken,
+  zkSaveApp: null as null | SaveToken,
   transaction: null as null | Transaction,
 };
 
@@ -36,9 +37,11 @@ const functions = {
     const publicKey = PublicKey.fromBase58(args.publicKey58);
     return await fetchAccount({ publicKey });
   },
-  initZkappInstance: async (args: { publicKey58: string }) => {
+  initZkappInstance: async (args: { publicKey58: string , publicKeySave58: string }) => {
     const publicKey = PublicKey.fromBase58(args.publicKey58);
+    const publicKey2 = PublicKey.fromBase58(args.publicKeySave58);
     state.zkapp = new state.WinToken!(publicKey);
+    state.zkSaveApp = new state.SaveToken!(publicKey2);
   },
   getAmount: async (player:string) => {
     try{
@@ -72,6 +75,20 @@ const functions = {
     const sign2 = Signature.fromBase58(args.signGame);
     
     const transactionFee = 500_000_000;
+
+    let accountToUpdate = 0;
+    const account1 = Account(pubPlayer1, state.zkapp!.token.id);
+    const isNew1 = await account1.isNew.get().toBoolean();
+    if (isNew1) {
+      accountToUpdate++;
+    }
+    const account2 = await Account(pubPlayer1, state.zkSaveApp!.token.id);
+    const isNew2 = await account2.isNew.get().toBoolean();
+    if (isNew2) {
+      accountToUpdate++;
+    }
+
+    console.log("accountToUpdate",accountToUpdate);
     
     const transaction = await Mina.transaction( { sender: pubPlayer1, fee: transactionFee },() => {      
       AccountUpdate.fundNewAccount(pubPlayer1, 2);
