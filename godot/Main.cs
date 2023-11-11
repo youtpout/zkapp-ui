@@ -73,10 +73,6 @@ public class Main : Control
             }
             gameOver.Show();
         }
-        else if (IsPlayerOTurn)
-        {
-            IAMove();
-        }
     }
 
     public void NewGame()
@@ -104,6 +100,18 @@ public class Main : Control
     public void SetPlayer(JavaScriptObject accounts)
     {
         GD.Print("res SetPlayer" + accounts.DynamicObject[0][0]);
+    }
+
+    /// <summary>
+    /// Every 1sec IA check to play
+    /// </summary>
+    public void TimeOut()
+    {
+
+        if (!GameEnd && IsPlayerOTurn)
+        {
+            IAMove();
+        }
     }
 
     public void Send()
@@ -143,7 +151,7 @@ public class Main : Control
             var signature = Signature.Sign(hash, player2Key, Network.Testnet);
             var tictactoe = JavaScript.GetInterface("tictactoe");
 
-            string stateJson= JsonConvert.SerializeObject(state);
+            string stateJson = JsonConvert.SerializeObject(state);
             var account = tictactoe.DynamicObject.send(stateJson, signature.ToString(), hash.ToString());
         }
         catch (Exception ex)
@@ -159,14 +167,14 @@ public class Main : Control
         // IA mechanism if mid tile doesn't selected check it by default
         if (tiles[4].TileState == EnumState.Unpressed)
         {
-            tiles[4].OnClick();
+            tiles[4].IAClick();
         }
         else if (tiles.Where((x) => x.TileState == EnumState.PlayerX).Count() == 1)
         {
             // player X only check mid, check random position
             var tilesEmpty = tiles.Where((x) => x.TileState == EnumState.Unpressed).ToArray();
             var rand = new Random().Next(0, tilesEmpty.Length);
-            tilesEmpty[rand].OnClick();
+            tilesEmpty[rand].IAClick();
         }
         else
         {
@@ -175,79 +183,79 @@ public class Main : Control
             {
                 if (tiles[1].TileState == EnumState.PlayerX)
                 {
-                    tiles[2].OnClick();
+                    tiles[2].IAClick();
                 }
                 else if (tiles[2].TileState == EnumState.PlayerX)
                 {
-                    tiles[1].OnClick();
+                    tiles[1].IAClick();
                 }
                 else if (tiles[4].TileState == EnumState.PlayerX)
                 {
-                    tiles[8].OnClick();
+                    tiles[8].IAClick();
                 }
                 else if (tiles[8].TileState == EnumState.PlayerX)
                 {
-                    tiles[4].OnClick();
+                    tiles[4].IAClick();
                 }
                 else if (tiles[3].TileState == EnumState.PlayerX)
                 {
-                    tiles[6].OnClick();
+                    tiles[6].IAClick();
                 }
                 if (tiles[6].TileState == EnumState.PlayerX)
                 {
-                    tiles[3].OnClick();
+                    tiles[3].IAClick();
                 }
             }
             else if (tiles[1].TileState == EnumState.PlayerX)
             {
                 if (tiles[2].TileState == EnumState.PlayerX)
                 {
-                    tiles[0].OnClick();
+                    tiles[0].IAClick();
                 }
                 else if (tiles[4].TileState == EnumState.PlayerX)
                 {
-                    tiles[7].OnClick();
+                    tiles[7].IAClick();
                 }
                 else if (tiles[7].TileState == EnumState.PlayerX)
                 {
-                    tiles[4].OnClick();
+                    tiles[4].IAClick();
                 }
             }
             else if (tiles[2].TileState == EnumState.PlayerX)
             {
                 if (tiles[4].TileState == EnumState.PlayerX)
                 {
-                    tiles[6].OnClick();
+                    tiles[6].IAClick();
                 }
                 else if (tiles[6].TileState == EnumState.PlayerX)
                 {
-                    tiles[4].OnClick();
+                    tiles[4].IAClick();
                 }
                 else if (tiles[5].TileState == EnumState.PlayerX)
                 {
-                    tiles[8].OnClick();
+                    tiles[8].IAClick();
                 }
                 else if (tiles[8].TileState == EnumState.PlayerX)
                 {
-                    tiles[5].OnClick();
+                    tiles[5].IAClick();
                 }
             }
             else if (tiles[3].TileState == EnumState.PlayerX)
             {
                 if (tiles[4].TileState == EnumState.PlayerX)
                 {
-                    tiles[5].OnClick();
+                    tiles[5].IAClick();
                 }
             }
             else if (tiles[6].TileState == EnumState.PlayerX)
             {
                 if (tiles[7].TileState == EnumState.PlayerX)
                 {
-                    tiles[8].OnClick();
+                    tiles[8].IAClick();
                 }
                 else if (tiles[8].TileState == EnumState.PlayerX)
                 {
-                    tiles[7].OnClick();
+                    tiles[7].IAClick();
                 }
             }
 
@@ -256,7 +264,7 @@ public class Main : Control
                 // if we check nothing and it IA turn use random check
                 var tilesEmpty = tiles.Where((x) => x.TileState == EnumState.Unpressed).ToArray();
                 var rand = new Random().Next(0, tilesEmpty.Length);
-                tilesEmpty[rand].OnClick();
+                tilesEmpty[rand].IAClick();
             }
         }
     }

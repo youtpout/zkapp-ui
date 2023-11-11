@@ -172,6 +172,17 @@ export default function Home() {
     })();
   }, [state.hasBeenSetup]);
 
+  useEffect(()=>{
+        // update data every 10 seconds
+        const interval = setInterval(() => {
+          if (state.publicKey && state.zkappWorkerClient) {
+            state.zkappWorkerClient.getAmount(state.publicKey).then();
+          }
+        }, 10000);
+    
+        return () => clearInterval(interval);
+  },[state])
+
   // -------------------------------------------------------
   // Send a transaction
 

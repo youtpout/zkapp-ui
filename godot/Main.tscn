@@ -133,5 +133,9 @@ custom_colors/font_color = Color( 1, 1, 1, 1 )
 custom_fonts/font = SubResource( 3 )
 text = "Send a proof of win to mina"
 
+[node name="Timer" type="Timer" parent="."]
+autostart = true
+
 [connection signal="button_up" from="GameOver/VBoxContainer/Button" to="." method="NewGame"]
 [connection signal="button_up" from="GameOver/VBoxContainer/Send" to="." method="Send"]
+[connection signal="timeout" from="Timer" to="." method="TimeOut"]

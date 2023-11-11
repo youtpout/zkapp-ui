@@ -29,13 +29,27 @@ public class Tile : TextureButton
 
         if (Main.IsPlayerOTurn)
         {
-            this.TextureNormal = PlayerO;
-            TileState = EnumState.PlayerO;
+            return;
         }
         else
         {
             this.TextureNormal = PlayerX;
             TileState = EnumState.PlayerX;
+        }
+        Main.IsPlayerOTurn = !Main.IsPlayerOTurn;
+    }
+
+    public void IAClick()
+    {
+        if (TileState != EnumState.Unpressed || Main.GameEnd)
+        {
+            return;
+        }
+
+        if (Main.IsPlayerOTurn)
+        {
+            this.TextureNormal = PlayerO;
+            TileState = EnumState.PlayerO;
         }
         Main.IsPlayerOTurn = !Main.IsPlayerOTurn;
     }

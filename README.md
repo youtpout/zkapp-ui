@@ -13,6 +13,8 @@ Source code of smartcontracts deployed on Barkeley
 
 Source of webpage who host the game and implement zkworker
 
+To update the Game in the UI, just export the game as HTML5 in Godot and copy the 3 files GodotMina.js/GodotMina.pck/GodotMina.wasm in ui/public folder, accept to replace the old files
+
 ## Godot
 
 Source of tictactoe game create with Godot 3.5 in C#

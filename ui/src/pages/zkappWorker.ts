@@ -46,8 +46,13 @@ const functions = {
   getAmount: async (player:string) => {
     try{
       const publicKey = PublicKey.fromBase58(player);
-      const amount = await Mina.getBalance(publicKey,state.zkapp?.token.id);
-      return JSON.stringify(amount.toJSON());
+      const tokenId= state.zkapp?.token.id;
+      await fetchAccount({publicKey:publicKey, tokenId:tokenId});
+      const hasAccount = Mina.hasAccount(publicKey, tokenId);
+      if (hasAccount){
+        const balance = Mina.getBalance(publicKey, tokenId);
+        return JSON.stringify(balance);
+      }
     }
     catch(ex){
       console.log(ex);
@@ -77,21 +82,28 @@ const functions = {
     const transactionFee = 500_000_000;
 
     let accountToUpdate = 0;
+    
     const account1 = Account(pubPlayer1, state.zkapp!.token.id);
     const isNew1 = await account1.isNew.get().toBoolean();
     if (isNew1) {
       accountToUpdate++;
     }
-    const account2 = await Account(pubPlayer1, state.zkSaveApp!.token.id);
-    const isNew2 = await account2.isNew.get().toBoolean();
-    if (isNew2) {
-      accountToUpdate++;
+    const tokenId= state.zkapp?.token.id;
+    await fetchAccount({publicKey:pubPlayer1, tokenId:tokenId});
+    const hasAccount = Mina.hasAccount(pubPlayer1, tokenId);
+    if (!hasAccount){
+        accountToUpdate++;
     }
-
+    const tokenIdSave= state.zkSaveApp?.token.id;
+    await fetchAccount({publicKey:pubPlayer1, tokenId:tokenIdSave});
+    const hasAccount2 = Mina.hasAccount(pubPlayer1, tokenIdSave);
+    if (!hasAccount2){
+        accountToUpdate++;
+    }
     console.log("accountToUpdate",accountToUpdate);
     
     const transaction = await Mina.transaction( { sender: pubPlayer1, fee: transactionFee },() => {      
-      AccountUpdate.fundNewAccount(pubPlayer1, 2);
+      AccountUpdate.fundNewAccount(pubPlayer1, accountToUpdate);
       state.zkapp!.getReward(pubPlayer1,sign1,player2,sign2,newGameState);
     });
     state.transaction = transaction;
