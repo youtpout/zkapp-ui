@@ -3,8 +3,11 @@ import type { AppProps } from 'next/app'
 
 import './reactCOIServiceWorker';
 import Script from 'next/script'
+import { useRouter } from 'next/router';
 
 export default function App({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+  const godotScriptUrl = `${router.basePath}/GodotMina.js`;
   return<>
   <div className='game-container'>
     <canvas id='canvas' >
@@ -13,6 +16,6 @@ export default function App({ Component, pageProps }: AppProps) {
     </canvas>
   </div>
   <Component {...pageProps} />
-  <Script src='/GodotMina.js' strategy='beforeInteractive'></Script>
+  <Script src={godotScriptUrl} strategy='beforeInteractive'></Script>
   </> 
 }
