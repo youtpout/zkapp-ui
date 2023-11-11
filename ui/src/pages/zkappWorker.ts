@@ -25,7 +25,7 @@ const functions = {
   },
   loadContract: async (args: {}) => {
     const { WinToken, SaveToken } = await import('../../../contracts/build/src/tictacsign.js');
-    state.WinToken = WinToken;
+    state.WinToken = WinToken as unknown as any;
     state.SaveToken = SaveToken;
   },
   compileContract: async (args: {}) => {
