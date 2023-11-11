@@ -51,8 +51,9 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
+          working-directory: ui
           node-version: "18"
-          cache: ${{ steps.detect-package-manager.outputs.manager }}/ui
+          cache: ${{ steps.detect-package-manager.outputs.manager }}
       - name: Setup Pages
         uses: actions/configure-pages@v3
         with:
