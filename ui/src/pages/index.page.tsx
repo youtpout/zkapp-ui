@@ -191,19 +191,18 @@ export default function Home() {
     const gameHash = newGameState.hash();
     console.log("gamehash", gameHash);
 
+
     const signContent = {
-      message: hashGame
+      message: [gameHash.toString()]
     };
 
-    const signResult= await win.mina?.signMessage(signContent);  
+    const signResult= await win.mina?.signFields(signContent);  
 
     console.log("sign",signResult);
-    const r: Field = Field.from(signResult.signature.field);
-    const s: Scalar = Scalar.from(signResult.signature.scalar);
-    const sign1 = Signature.fromObject({r,s});
+    const sign1 = signResult.signature;
     console.log("sign1",sign1);
 
-    await win.tictactoe.state.zkappWorkerClient!.createGetRewardTransaction(gameState,signGame, player1.toBase58(),sign1.toBase58());
+    await win.tictactoe.state.zkappWorkerClient!.createGetRewardTransaction(gameState,signGame, player1.toBase58(),sign1);
 
     setDisplayText('Creating proof...');
     console.log('Creating proof...');

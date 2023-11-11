@@ -112,6 +112,40 @@ describe('Tictactsign', () => {
     expect(zkAppAddress2.toBase58()).toEqual(newAddress.toBase58());
   });
 
+  it('test sign', async () => {
+    const play1 = 'B62qk7R5wo6WTwYSpBHPtfikGvkuasJGEv4ZsSA2sigJdqJqYsWUzA1';
+    const play2 = 'B62qnL3MYoZcmppsLqR7XjS5tAgs3ErMGjM8aL6UpE3tvt5bC23fWo6';
+
+    return;
+    // for test purpose
+    const key1 = '';
+    const key2 = '';
+
+    console.log(
+      'account1',
+      PrivateKey.fromBase58(key1).toPublicKey().toBase58()
+    );
+    const gameState: GameState = new GameState({
+      board: Field.from(70041),
+      player1: PublicKey.fromBase58(play1),
+      player2: PublicKey.fromBase58(play2),
+      nextIsPlayer2: Bool(true),
+      startTimeStamp: UInt64.from('1699664476'),
+    });
+
+    console.log('hash', gameState.hash().toString());
+
+    const signPlayer1 = Signature.create(PrivateKey.fromBase58(key1), [
+      gameState.hash(),
+    ]);
+    const signPlayer2 = Signature.create(PrivateKey.fromBase58(key2), [
+      gameState.hash(),
+    ]);
+
+    console.log('sign1', signPlayer1.toBase58());
+    console.log('sign2', signPlayer2.toBase58());
+  });
+
   it('get reward', async () => {
     await localDeploy();
 

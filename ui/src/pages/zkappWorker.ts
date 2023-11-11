@@ -4,10 +4,11 @@ type Transaction = Awaited<ReturnType<typeof Mina.transaction>>;
 
 // ---------------------------------------------------------------------------------------
 
-import type { WinToken } from '../../../contracts/src/tictacsign';
+import type { WinToken, SaveToken } from '../../../contracts/src/tictacsign';
 
 const state = {
   WinToken: null as null | typeof WinToken,
+  SaveToken: null as null | typeof SaveToken,
   zkapp: null as null | WinToken,
   transaction: null as null | Transaction,
 };
@@ -23,11 +24,13 @@ const functions = {
     Mina.setActiveInstance(Berkeley);
   },
   loadContract: async (args: {}) => {
-    const { WinToken } = await import('../../../contracts/build/src/tictacsign.js');
+    const { WinToken, SaveToken } = await import('../../../contracts/build/src/tictacsign.js');
     state.WinToken = WinToken;
+    state.SaveToken = SaveToken;
   },
   compileContract: async (args: {}) => {
     await state.WinToken!.compile();
+    await state.SaveToken!.compile();
   },
   fetchAccount: async (args: { publicKey58: string }) => {
     const publicKey = PublicKey.fromBase58(args.publicKey58);
@@ -68,7 +71,7 @@ const functions = {
     const sign1 = Signature.fromBase58(args.sign1);
     const sign2 = Signature.fromBase58(args.signGame);
 
-    const transaction = await Mina.transaction({ sender: pubPlayer1, fee: '1000000000' },() => {      
+    const transaction = await Mina.transaction(() => {      
       state.zkapp!.getReward(pubPlayer1,sign1,player2,sign2,newGameState);
     });
     state.transaction = transaction;
