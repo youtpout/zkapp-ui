@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 // to be compatible with github pages deployment.
 const cssDir = path.join(__dirname, '/out/_next/static/css');
 // Update your repository name here if it is different from the project name.
-let repoURL = "zkapp-ui";
+let repoURL = "TicTacToe";
 const files = fs.readdirSync(cssDir);
 
 files.forEach((file) => {

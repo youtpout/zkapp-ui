@@ -5,7 +5,7 @@ import { PublicKey, Field, PrivateKey, Bool, UInt64, Signature, Scalar } from 'o
 import GradientBG from '../components/GradientBG.js';
 import styles from '../styles/Home.module.css';
 
-let transactionFee = 0.1;
+let transactionFee = 0.5;
 
 export default function Home() {
   const [state, setState] = useState({

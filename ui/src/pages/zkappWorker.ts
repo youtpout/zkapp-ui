@@ -1,4 +1,4 @@
-import { Account, Bool, Field, Mina, PublicKey, Signature, UInt64, fetchAccount } from 'o1js';
+import { Account, AccountUpdate, Bool, Field, Mina, PublicKey, Signature, UInt64, fetchAccount } from 'o1js';
 
 type Transaction = Awaited<ReturnType<typeof Mina.transaction>>;
 
@@ -70,8 +70,11 @@ const functions = {
   
     const sign1 = Signature.fromBase58(args.sign1);
     const sign2 = Signature.fromBase58(args.signGame);
-
-    const transaction = await Mina.transaction(() => {      
+    
+    const transactionFee = 500_000_000;
+    
+    const transaction = await Mina.transaction( { sender: pubPlayer1, fee: transactionFee },() => {      
+      AccountUpdate.fundNewAccount(pubPlayer1, 2);
       state.zkapp!.getReward(pubPlayer1,sign1,player2,sign2,newGameState);
     });
     state.transaction = transaction;
