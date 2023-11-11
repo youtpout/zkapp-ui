@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import './reactCOIServiceWorker';
 import ZkappWorkerClient from './zkappWorkerClient';
-import { PublicKey, Field } from 'o1js';
+import { PublicKey, Field, PrivateKey, Bool, UInt64, Signature, Scalar } from 'o1js';
 import GradientBG from '../components/GradientBG.js';
 import styles from '../styles/Home.module.css';
 
@@ -24,8 +24,17 @@ export default function Home() {
   const [val, setVal] = useState(2);
   useEffect(() => {
     const win = (window as any);
-    win.tictactoe = {account:"",game :  new win.Engine(GODOT_CONFIG)};
+    win.tictactoe = {account:"",
+    game : new win.Engine(GODOT_CONFIG),
+    send : send,
+    state : state
+  };
   }, []);
+
+  useEffect(() => {
+    const win = (window as any);
+    win.tictactoe.state = state;
+  }, [state]);
 
   useEffect(()=>{   
     const win = (window as any);
@@ -44,6 +53,14 @@ export default function Home() {
 
   const [displayText, setDisplayText] = useState('');
   const [transactionlink, setTransactionLink] = useState('');
+
+  const send = useCallback((gameState:string, signature:string, hashGame:string)=>{
+    console.log("send state", gameState);
+    console.log("signature", signature);
+    console.log("hashGame", hashGame);
+
+    onSendTransaction(gameState,signature,hashGame).then();
+  },[state]);
 
 
   // -------------------------------------------------------
@@ -145,6 +162,7 @@ export default function Home() {
           await new Promise((resolve) => setTimeout(resolve, 5000));
         }
         setState({ ...state, accountExists: true });
+        
       }
     })();
   }, [state.hasBeenSetup]);
@@ -152,25 +170,48 @@ export default function Home() {
   // -------------------------------------------------------
   // Send a transaction
 
-  const onSendTransaction = async () => {
-    setState({ ...state, creatingTransaction: true });
+  const onSendTransaction = async (gameState:string, signGame:string, hashGame:string) => {
+    const win = (window as any);
 
     setDisplayText('Creating a transaction...');
     console.log('Creating a transaction...');
 
-    await state.zkappWorkerClient!.fetchAccount({
-      publicKey: state.publicKey!
+    var player1 = win.tictactoe.state.publicKey;
+    var player2 = PublicKey.fromBase58("B62qnL3MYoZcmppsLqR7XjS5tAgs3ErMGjM8aL6UpE3tvt5bC23fWo6");
+    var oldState = JSON.parse(gameState);
+    const { GameState } = await import('../../../contracts/build/src/tictacsign.js');
+    const newGameState = new GameState({
+      board: Field.from(oldState.Board),
+      player1 : player1,
+      player2 : player2,
+      nextIsPlayer2: Bool(true),
+      startTimeStamp: UInt64.from(oldState.StartTimeStamp),
     });
 
-    await state.zkappWorkerClient!.createUpdateTransaction();
+    const gameHash = newGameState.hash();
+    console.log("gamehash", gameHash);
+
+    const signContent = {
+      message: hashGame
+    };
+
+    const signResult= await win.mina?.signMessage(signContent);  
+
+    console.log("sign",signResult);
+    const r: Field = Field.from(signResult.signature.field);
+    const s: Scalar = Scalar.from(signResult.signature.scalar);
+    const sign1 = Signature.fromObject({r,s});
+    console.log("sign1",sign1);
+
+    await win.tictactoe.state.zkappWorkerClient!.createGetRewardTransaction(gameState,signGame, player1.toBase58(),sign1.toBase58());
 
     setDisplayText('Creating proof...');
     console.log('Creating proof...');
-    await state.zkappWorkerClient!.proveUpdateTransaction();
+    await win.tictactoe.state.zkappWorkerClient!.proveUpdateTransaction();
 
     console.log('Requesting send transaction...');
     setDisplayText('Requesting send transaction...');
-    const transactionJSON = await state.zkappWorkerClient!.getTransactionJSON();
+    const transactionJSON = await win.tictactoe.state.zkappWorkerClient!.getTransactionJSON();
 
     setDisplayText('Getting transaction JSON...');
     console.log('Getting transaction JSON...');
@@ -187,8 +228,6 @@ export default function Home() {
 
     setTransactionLink(transactionLink);
     setDisplayText(transactionLink);
-
-    setState({ ...state, creatingTransaction: false });
   };
 
   // -------------------------------------------------------
@@ -260,17 +299,9 @@ export default function Home() {
         <div className={styles.center} style={{ padding: 0 }}>
           Current win game in zkApp: {state.currentNum!.toString()}{' '}
         </div>
-        <button
-          className={styles.card}
-          onClick={onSendTransaction}
-          disabled={state.creatingTransaction}
-        >
-          Send Transaction
-        </button>
         <button className={styles.card} onClick={onRefreshCurrentNum}>
           Get Latest State
         </button>
-        {val}
       </div>
     );
   }

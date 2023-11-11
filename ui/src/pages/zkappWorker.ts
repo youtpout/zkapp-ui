@@ -1,10 +1,10 @@
-import { Account, Mina, PublicKey, Signature, fetchAccount } from 'o1js';
+import { Account, Bool, Field, Mina, PublicKey, Signature, UInt64, fetchAccount } from 'o1js';
 
 type Transaction = Awaited<ReturnType<typeof Mina.transaction>>;
 
 // ---------------------------------------------------------------------------------------
 
-import type { GameState, WinToken } from '../../../contracts/src/tictacsign';
+import type { WinToken } from '../../../contracts/src/tictacsign';
 
 const state = {
   WinToken: null as null | typeof WinToken,
@@ -48,9 +48,28 @@ const functions = {
     }
     return "0";
   },
-  createGetReward: async (player1: PublicKey,player2: PublicKey,sign1:Signature,sign2:Signature, gamestate:GameState) => {
-    const transaction = await Mina.transaction(() => {
-      state.zkapp!.getReward(player1,sign1,player2,sign2,gamestate);
+  createGetRewardTransaction: async (args: {gameState:string, signGame:string, player1:string, sign1:string}) => {
+    
+    // match with IA private key on godot game
+    var player2 = PublicKey.fromBase58("B62qnL3MYoZcmppsLqR7XjS5tAgs3ErMGjM8aL6UpE3tvt5bC23fWo6");
+    var oldState = JSON.parse(args.gameState);
+    const { GameState } = await import('../../../contracts/build/src/tictacsign.js');
+    const newGameState = new GameState({
+      board: Field.from(oldState.Board),
+      player1 : PublicKey.fromBase58(args.player1),
+      player2 : player2,
+      nextIsPlayer2: Bool(true),
+      startTimeStamp: UInt64.from(oldState.StartTimeStamp),
+    });
+
+   
+    var pubPlayer1= PublicKey.fromBase58(args.player1);
+  
+    const sign1 = Signature.fromBase58(args.sign1);
+    const sign2 = Signature.fromBase58(args.signGame);
+
+    const transaction = await Mina.transaction({ sender: pubPlayer1, fee: '1000000000' },() => {      
+      state.zkapp!.getReward(pubPlayer1,sign1,player2,sign2,newGameState);
     });
     state.transaction = transaction;
   },

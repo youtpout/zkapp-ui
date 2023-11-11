@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using MinaSignerNet;
 using Microsoft.CSharp;
+using Newtonsoft.Json;
+using System.Numerics;
 
 public class Main : Control
 {
@@ -125,19 +127,24 @@ public class Main : Control
             // serialize field like board game
             var bytes = isPlayed.Concat(player).ToList().BitsToBytes().BytesToBigInt();
 
+            var privKey = new PrivateKey(player2Key);
             GameState state = new GameState()
             {
                 Player1 = new PublicKey(player1Key),
-                Player2 = new PublicKey(player2Key),
-                Board = bytes,
-                NextIsPlayer2 = !IsPlayerOTurn,
+                Player2 = privKey.GetPublicKey(),
+                // todo use the real board number
+                Board = new BigInteger(70041),
+                NextIsPlayer2 = IsPlayerOTurn,
                 StartTimeStamp = (ulong)startGame
             };
             var hash = state.Hash();
+            GD.Print(hash);
 
             var signature = Signature.Sign(hash, player2Key, Network.Testnet);
             var tictactoe = JavaScript.GetInterface("tictactoe");
-            var account = tictactoe.DynamicObject.send(state, signature);
+
+            string stateJson= JsonConvert.SerializeObject(state);
+            var account = tictactoe.DynamicObject.send(stateJson, signature.ToString(), hash.ToString());
         }
         catch (Exception ex)
         {

@@ -43,8 +43,8 @@ export default class ZkappWorkerClient {
     return Field.fromJSON(JSON.parse(result as string));
   }
 
-  createUpdateTransaction() {
-    return this._call('createUpdateTransaction', {});
+  createGetRewardTransaction(gameState:string, signGame:string, player1:string, sign1:string) {
+    return this._call('createGetRewardTransaction', {gameState, signGame, player1, sign1});
   }
 
   proveUpdateTransaction() {

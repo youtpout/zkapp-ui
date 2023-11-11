@@ -21,9 +21,6 @@ import {
   Permissions,
   Poseidon,
 } from 'o1js';
-import { Authorization } from 'o1js/dist/node/lib/account_update';
-
-import { sign } from 'o1js/dist/node/mina-signer/src/signature';
 
 export { Board, GameState, WinToken, SaveToken };
 
