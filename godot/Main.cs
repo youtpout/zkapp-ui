@@ -141,7 +141,7 @@ public class Main : Control
                 Player1 = new PublicKey(player1Key),
                 Player2 = privKey.GetPublicKey(),
                 // todo use the real board number
-                Board = new BigInteger(70041),
+                Board = bytes,
                 NextIsPlayer2 = IsPlayerOTurn,
                 StartTimeStamp = (ulong)startGame
             };
