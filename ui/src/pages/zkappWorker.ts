@@ -83,11 +83,6 @@ const functions = {
 
     let accountToUpdate = 0;
     
-    const account1 = Account(pubPlayer1, state.zkapp!.token.id);
-    const isNew1 = await account1.isNew.get().toBoolean();
-    if (isNew1) {
-      accountToUpdate++;
-    }
     const tokenId= state.zkapp?.token.id;
     await fetchAccount({publicKey:pubPlayer1, tokenId:tokenId});
     const hasAccount = Mina.hasAccount(pubPlayer1, tokenId);
