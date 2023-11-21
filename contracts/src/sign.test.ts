@@ -27,6 +27,8 @@ import { PublicKey as PublicKey2 } from 'o1js/dist/node/provable/curve-bigint.js
 
 let proofsEnabled = false;
 
+const text = 'Hello world welcome in 2023 mina navigator programs';
+
 describe('Sign', () => {
   it('Sign message string', async () => {
     const privKey = 'EKDtctFSZuDJ8SXuWcbXHot57gZDtu7dNSAZNZvXek8KF8q6jV8K';
@@ -36,10 +38,7 @@ describe('Sign', () => {
     const publickKey = privateKey.toPublicKey();
 
     const client = new Client({ network: 'mainnet' });
-    const signed = client.signMessage(
-      'Hello world welcome in 2023 mina navigator programs',
-      privKey
-    );
+    const signed = client.signMessage(text, privKey);
 
     console.log('signature hello', signed);
 
@@ -56,10 +55,7 @@ describe('Sign', () => {
     const publickKey = privateKey.toPublicKey();
 
     const client = new Client({ network: 'mainnet' });
-    const signed = client.signMessage(
-      'Hello world welcome in 2023 mina navigator programs',
-      privKey
-    );
+    const signed = client.signMessage(text, privKey);
 
     console.log('signature hello', signed);
 
