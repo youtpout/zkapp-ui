@@ -37,7 +37,7 @@ describe('Sign', () => {
     const privateKey = PrivateKey.fromBase58(privKey);
     const publickKey = privateKey.toPublicKey();
 
-    const client = new Client({ network: 'mainnet' });
+    const client = new Client({ network: 'testnet' });
     const signed = client.signMessage(text, privKey);
 
     console.log('signature hello', signed);
@@ -54,7 +54,7 @@ describe('Sign', () => {
     const privateKey = PrivateKey.fromBase58(privKey);
     const publickKey = privateKey.toPublicKey();
 
-    const client = new Client({ network: 'mainnet' });
+    const client = new Client({ network: 'testnet' });
     const signed = client.signMessage(text, privKey);
 
     console.log('signature hello', signed);
