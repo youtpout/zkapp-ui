@@ -40,7 +40,7 @@ describe('Sign', () => {
     const client = new Client({ network: 'testnet' });
     const signed = client.signMessage(text, privKey);
 
-    console.log('signature hello', signed);
+    console.log(text, signed);
 
     const verify = client.verifyMessage(signed);
 
@@ -57,7 +57,7 @@ describe('Sign', () => {
     const client = new Client({ network: 'testnet' });
     const signed = client.signMessage(text, privKey);
 
-    console.log('signature hello', signed);
+    console.log(text, signed);
 
     const verify = client.verifyMessage({
       data: 'Other message',
