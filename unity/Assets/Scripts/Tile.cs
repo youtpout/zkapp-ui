@@ -30,16 +30,14 @@ public class Tile : MonoBehaviour
 
     public void OnClick()
     {
-        //if (TileState != EnumState.Unpressed || Main.GameEnd)
-        //{
-        //    return;
-        //}
+        if (TileState != EnumState.Unpressed || Main.GameEnd)
+        {
+            return;
+        }
 
         if (Main.IsPlayerOTurn)
         {
-            //return;
-            btnTile.image.sprite = PlayerO;
-            TileState = EnumState.PlayerO;
+            return;
         }
         else
         {
