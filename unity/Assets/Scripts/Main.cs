@@ -11,7 +11,7 @@ public class Main : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-
+        GameEnd = false;
     }
 
     // Update is called once per frame

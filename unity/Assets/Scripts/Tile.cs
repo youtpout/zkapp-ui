@@ -2,19 +2,23 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Resources;
 using UnityEngine;
+using UnityEngine.UI;
 using static UnityEditor.Experimental.GraphView.GraphView;
 
 public class Tile : MonoBehaviour
 {
     public EnumState TileState { get; set; }
 
-    public readonly Texture Unpressed;
-    public readonly Texture PlayerX; 
-    public readonly Texture PlayerO;
+    public Sprite Unpressed;
+    public Sprite PlayerX;
+    public Sprite PlayerO;
+
+    private Button btnTile;
 
     // Start is called before the first frame update
     void Start()
     {
+        btnTile = GetComponent<Button>();
 
     }
 
@@ -26,18 +30,20 @@ public class Tile : MonoBehaviour
 
     public void OnClick()
     {
-        if (TileState != EnumState.Unpressed || Main.GameEnd)
-        {
-            return;
-        }
+        //if (TileState != EnumState.Unpressed || Main.GameEnd)
+        //{
+        //    return;
+        //}
 
         if (Main.IsPlayerOTurn)
         {
-            return;
+            //return;
+            btnTile.image.sprite = PlayerO;
+            TileState = EnumState.PlayerO;
         }
         else
         {
-           // this.TextureNormal = PlayerX;
+            btnTile.image.sprite = PlayerX;
             TileState = EnumState.PlayerX;
         }
         Main.IsPlayerOTurn = !Main.IsPlayerOTurn;
@@ -52,7 +58,7 @@ public class Tile : MonoBehaviour
 
         if (Main.IsPlayerOTurn)
         {
-            //this.TextureNormal = PlayerO;
+            btnTile.image.sprite = PlayerO;
             TileState = EnumState.PlayerO;
         }
         Main.IsPlayerOTurn = !Main.IsPlayerOTurn;
@@ -61,6 +67,6 @@ public class Tile : MonoBehaviour
     public void Reset()
     {
         TileState = EnumState.Unpressed;
-       // this.TextureNormal = Unpressed;
+        btnTile.image.sprite = Unpressed;
     }
 }
