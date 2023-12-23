@@ -8,6 +8,7 @@ using System.Linq;
 using UnityEditor.U2D.Path.GUIFramework;
 using UnityEngine;
 using UnityEngine.UI;
+using Assets.Scripts;
 
 public class Main : MonoBehaviour
 {
@@ -33,6 +34,7 @@ public class Main : MonoBehaviour
         InvokeRepeating("TimeOut", 1f, 1f);  //1s delay, repeat every 1s
     }
 
+
     public void NewGame()
     {
         GameEnd = false;
@@ -44,10 +46,9 @@ public class Main : MonoBehaviour
 
         try
         {
-            // var tictactoe = JavaScript.GetInterface("tictactoe");
-            // var account = tictactoe.DynamicObject.account;
-            //  GD.Print("player account " + account);
-            // player1Key = "0x0";
+            var account = MinaInteraction.GetAccount();
+            Debug.Log("player account " + account);
+            player1Key = account;
         }
         catch (Exception ex)
         {
@@ -297,10 +298,10 @@ public class Main : MonoBehaviour
             Debug.Log(hash);
 
             var signature = Signature.Sign(hash, player2Key, MinaSignerNet.Network.Testnet);
-        //    var tictactoe = JavaScript.GetInterface("tictactoe");
+            //    var tictactoe = JavaScript.GetInterface("tictactoe");
 
-        //    string stateJson = JsonConvert.SerializeObject(state);
-        // var account = tictactoe.DynamicObject.send(stateJson, signature.ToString(), hash.ToString());
+            //    string stateJson = JsonConvert.SerializeObject(state);
+            // var account = tictactoe.DynamicObject.send(stateJson, signature.ToString(), hash.ToString());
         }
         catch (Exception ex)
         {
