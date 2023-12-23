@@ -1,3 +1,6 @@
+using MinaSignerNet.Utils;
+using MinaSignerNet;
+using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -26,7 +29,7 @@ public class Main : MonoBehaviour
     {
         tiles = this.GetComponentsInChildren<Tile>().ToList();
         Debug.Log($"tiles nb {tiles.Count}");
-
+        btnSend.gameObject.SetActive(false);
         InvokeRepeating("TimeOut", 1f, 1f);  //1s delay, repeat every 1s
     }
 
@@ -44,11 +47,11 @@ public class Main : MonoBehaviour
             // var tictactoe = JavaScript.GetInterface("tictactoe");
             // var account = tictactoe.DynamicObject.account;
             //  GD.Print("player account " + account);
-            player1Key = "0x0";
+            // player1Key = "0x0";
         }
         catch (Exception ex)
         {
-            // GD.PrintErr(ex);
+            Debug.LogException(ex);
         }
     }
 
@@ -257,6 +260,54 @@ public class Main : MonoBehaviour
             return first == EnumState.PlayerO ? EnumWinner.PlayerO : EnumWinner.PlayerX;
         }
         return EnumWinner.NotFinish;
+    }
+
+    public void Send()
+    {
+        try
+        {
+            List<bool> isPlayed = new List<bool>();
+            List<bool> player = new List<bool>();
+            for (var i = 0; i < 3; i++)
+            {
+                for (var j = 0; j < 3; j++)
+                {
+                    int index = i + (j * 3);
+                    bool played = this.tiles[index].TileState != EnumState.Unpressed;
+                    bool isPlayer2 = this.tiles[index].TileState == EnumState.PlayerO;
+                    isPlayed.Add(played);
+                    player.Add(isPlayer2);
+                }
+            }
+
+            // serialize field like board game
+            var bytes = isPlayed.Concat(player).ToList().BitsToBytes().BytesToBigInt();
+
+            var privKey = new PrivateKey(player2Key);
+            GameState state = new GameState()
+            {
+                Player1 = new PublicKey(player1Key),
+                Player2 = privKey.GetPublicKey(),
+                // todo use the real board number
+                Board = bytes,
+                NextIsPlayer2 = IsPlayerOTurn,
+                StartTimeStamp = (ulong)startGame
+            };
+            var hash = state.Hash();
+            Debug.Log(hash);
+
+            var signature = Signature.Sign(hash, player2Key, MinaSignerNet.Network.Testnet);
+        //    var tictactoe = JavaScript.GetInterface("tictactoe");
+
+        //    string stateJson = JsonConvert.SerializeObject(state);
+        // var account = tictactoe.DynamicObject.send(stateJson, signature.ToString(), hash.ToString());
+        }
+        catch (Exception ex)
+        {
+            Debug.LogException(ex);
+        }
+
+
     }
 
 }
