@@ -2,10 +2,7 @@
 using MinaSignerNet.Utils;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
 
 /// <summary>
 /// Class like the gamestate struct in WinToken smartcontract use to generate signature

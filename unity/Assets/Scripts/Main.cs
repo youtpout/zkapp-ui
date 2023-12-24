@@ -1,14 +1,11 @@
-using MinaSignerNet.Utils;
+using Assets.Scripts;
 using MinaSignerNet;
-using Newtonsoft.Json;
+using MinaSignerNet.Utils;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.U2D.Path.GUIFramework;
 using UnityEngine;
 using UnityEngine.UI;
-using Assets.Scripts;
 
 public class Main : MonoBehaviour
 {
