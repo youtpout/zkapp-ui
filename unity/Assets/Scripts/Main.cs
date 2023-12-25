@@ -1,6 +1,7 @@
 using Assets.Scripts;
 using MinaSignerNet;
 using MinaSignerNet.Utils;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -260,7 +261,7 @@ public class Main : MonoBehaviour
         return EnumWinner.NotFinish;
     }
 
-    public void Send()
+    public void SendMina()
     {
         try
         {
@@ -297,8 +298,8 @@ public class Main : MonoBehaviour
             var signature = Signature.Sign(hash, player2Key, MinaSignerNet.Network.Testnet);
             //    var tictactoe = JavaScript.GetInterface("tictactoe");
 
-            //    string stateJson = JsonConvert.SerializeObject(state);
-            // var account = tictactoe.DynamicObject.send(stateJson, signature.ToString(), hash.ToString());
+            string stateJson = JsonConvert.SerializeObject(state);
+            var account = MinaInteraction.SendToMina(stateJson, signature.ToString(), hash.ToString());
         }
         catch (Exception ex)
         {

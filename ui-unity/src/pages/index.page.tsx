@@ -4,7 +4,7 @@ import ZkappWorkerClient from './zkappWorkerClient';
 import { PublicKey, Field, PrivateKey, Bool, UInt64, Signature, Scalar } from 'o1js';
 import GradientBG from '../components/GradientBG.js';
 import styles from '../styles/Home.module.css';
-
+import { useRouter } from 'next/router';
 let transactionFee = 0.5;
 
 export default function Home() {
@@ -19,13 +19,26 @@ export default function Home() {
     creatingTransaction: false
   });
 
-  const GODOT_CONFIG = {"args":[],"canvasResizePolicy":1,"executable":"GodotMina","experimentalVK":false,"fileSizes":{"GodotMina.pck":18538448,"GodotMina.wasm":18795755},"focusCanvas":true,"gdnativeLibs":[]};
-  
+  const router = useRouter();
+  const buildUrl = `${router.basePath}/Build`;
+  const loaderUrl = buildUrl + "/html5.loader.js";
+  var config = {
+    dataUrl: buildUrl + "/html5.data.unityweb",
+    frameworkUrl: buildUrl + "/html5.framework.js.unityweb",
+    codeUrl: buildUrl + "/html5.wasm.unityweb",
+    streamingAssetsUrl: "StreamingAssets",
+    companyName: "Youtpout",
+    productName: "UnityMina",
+    productVersion: "1.0",
+    showBanner: false,
+  };
+
   const [val, setVal] = useState(2);
   useEffect(() => {
     const win = (window as any);
+    const canvas =  win.document.querySelector("#canvas");
     win.tictactoe = {account:"",
-    game : new win.Engine(GODOT_CONFIG),
+    game:  win?.createUnityInstance(canvas,config,()=>{}),
     send : send,
     state : state
   };
@@ -41,7 +54,7 @@ export default function Home() {
     if(state.accountExists && win.tictactoe){
       console.log("acc",state.publicKey?.toBase58());
         win.tictactoe.account = state.publicKey?.toBase58();
-        win.tictactoe?.game?.startGame().then();
+        win.tictactoe?.game?.then();
     }
     
   },[state.accountExists]) 
