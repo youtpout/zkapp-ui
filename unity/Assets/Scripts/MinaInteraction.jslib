@@ -10,13 +10,6 @@
       return "";
     },   
     SendToMina: function (state,signature,hash) {
-      var returnValue = window.tictactoe.send(UTF8ToString(state),UTF8ToString(signature),UTF8ToString(hash));
-      if(returnValue !== null) {
-            var bufferSize = lengthBytesUTF8(returnValue) + 1;
-            var buffer = _malloc(bufferSize);
-            stringToUTF8(returnValue, buffer, bufferSize);
-            return buffer;
-      }
-      return "";
+      window.tictactoe.send(UTF8ToString(state),UTF8ToString(signature),UTF8ToString(hash));
     }   
 });

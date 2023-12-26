@@ -35,10 +35,9 @@ export default function Home() {
 
   const [val, setVal] = useState(2);
   useEffect(() => {
-    const win = (window as any);
-    const canvas =  win.document.querySelector("#canvas");
+    const win = (window as any); 
     win.tictactoe = {account:"",
-    game:  win?.createUnityInstance(canvas,config,()=>{}),
+    game:  win?.createUnityInstance,
     send : send,
     state : state
   };
@@ -52,9 +51,10 @@ export default function Home() {
   useEffect(()=>{   
     const win = (window as any);
     if(state.accountExists && win.tictactoe){
+      const canvas =  win.document.querySelector("#canvas");
       console.log("acc",state.publicKey?.toBase58());
         win.tictactoe.account = state.publicKey?.toBase58();
-        win.tictactoe?.game?.then();
+        win.tictactoe?.game(canvas,config,()=>{})?.then();
     }
     
   },[state.accountExists]) 
