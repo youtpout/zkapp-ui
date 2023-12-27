@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && type nul > out\\.nojekyll",
     "start": "next start",
     "lint": "next lint",
     "ts-watch": "tsc --noEmit --incremental --watch",
@@ -16,7 +16,7 @@
     "@types/react": "18.2.33",
     "@types/react-dom": "18.2.14",
     "coi-serviceworker": "^0.1.7",
-    "next": "13.0.0",
+    "next": "14.0.0",
     "o1js": "0.14.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
