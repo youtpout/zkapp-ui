@@ -27,9 +27,7 @@ describe('Game merkle', () => {
     senderAccount: PublicKey,
     senderKey: PrivateKey,
     zkAppAddress: PublicKey,
-    zkAppAddress2: PublicKey,
     zkAppPrivateKey: PrivateKey,
-    zkAppPrivateKey2: PrivateKey,
     player1: PublicKey,
     player1Key: PrivateKey,
     player2: PublicKey,
@@ -70,13 +68,17 @@ describe('Game merkle', () => {
 
   it('add merkle', async () => {
     await localDeploy();
+    await createMerkle(100);
+    await createMerkle(50);
+  });
 
+  async function createMerkle(size: number) {
     const actualMerkle = zkApp.root.get();
 
     const buildMerkle = new BuildMerkle(actualMerkle);
 
     const actions: GameAction[] = [];
-    for (let index = 0; index < 100; index++) {
+    for (let index = 0; index < size; index++) {
       const newAction = new GameAction({
         player1,
         player2,
@@ -93,7 +95,6 @@ describe('Game merkle', () => {
       zkApp.updateMerkle(result.merkle, result.expected);
     });
     await txn.prove();
-    // this tx needs .sign(), because `deploy()` adds an account update that requires signature authorization
     await txn.sign([deployerKey]).send();
-  });
+  }
 });
