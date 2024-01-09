@@ -81,11 +81,10 @@ export class BuildMerkle {
 }
 
 export class GameMerkle extends SmartContract {
-  @state(UInt64) totalAmountInCirculation = State<UInt64>();
-
   // the root is the root hash of our off-chain Merkle tree
   @state(Field) root = State<Field>();
 
+  // payment nonce
   @state(Field) nonce = State<Field>();
 
   deploy(args: DeployArgs) {
@@ -95,16 +94,13 @@ export class GameMerkle extends SmartContract {
 
     this.account.permissions.set({
       ...Permissions.default(),
-      editState: permissionToEdit,
+      editState: Permissions.signature(),
       setTokenSymbol: permissionToEdit,
       send: permissionToEdit,
       receive: permissionToEdit,
     });
-  }
-  @method init() {
-    super.init();
+
     this.account.tokenSymbol.set(tokenSymbol);
-    this.totalAmountInCirculation.set(UInt64.zero);
   }
 
   @method updateMerkle(leaf: Field, expectedRoot: Field) {

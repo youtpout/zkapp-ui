@@ -93,8 +93,9 @@ describe('Game merkle', () => {
 
     const txn = await Mina.transaction(deployerAccount, () => {
       zkApp.updateMerkle(result.merkle, result.expected);
+      zkApp.requireSignature();
     });
     await txn.prove();
-    await txn.sign([deployerKey]).send();
+    await txn.sign([deployerKey, zkAppPrivateKey]).send();
   }
 });
