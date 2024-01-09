@@ -22,6 +22,7 @@
     "testw": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "testlog": "node --experimental-vm-modules node_modules/jest/bin/jest.js --silent=false",
     "testSign": "node --experimental-vm-modules node_modules/jest/bin/jest.js -- minasign --watch",
+    "testGame": "node --experimental-vm-modules node_modules/jest/bin/jest.js -- gamemerkle --watch",
     "lint": "npx eslint src/* --fix",
     "start": "node build/src/run.js",
     "update": "node build/src/update.js"

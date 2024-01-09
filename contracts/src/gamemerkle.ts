@@ -28,10 +28,10 @@ import {
   public_,
 } from 'o1js';
 
-const tokenSymbol = 'GameCoin';
+const tokenSymbol = 'MON';
 const mintAmount = 1_000_000_000;
 
-class GameAction extends Struct({
+export class GameAction extends Struct({
   player1: PublicKey,
   player2: PublicKey,
   idAction: UInt64,
@@ -49,7 +49,15 @@ class GameAction extends Struct({
   }
 
   hash(): Field {
-    return Poseidon.hash(GameAction.toFields(this));
+    return Poseidon.hash([
+      this.player1.x,
+      this.player1.isOdd.toField(),
+      this.player2.x,
+      this.player2.isOdd.toField(),
+      new Field(this.idAction.value),
+      new Field(this.amount.value),
+      new Field(this.actionType.value),
+    ]);
   }
 }
 
@@ -60,23 +68,15 @@ export class BuildMerkle {
     this.merkle = actualMerkle;
   }
 
-  build(gameActions: GameAction[], expectedTree: Field, expectedRoot: Field) {
+  build(gameActions: GameAction[]): { merkle: Field; expected: Field } {
     const newTree = new MerkleTree(gameActions.length);
     newTree.fill(gameActions.map((x) => x.hash()));
 
-    if (expectedTree != newTree.getRoot()) {
-      throw "expected tree doesn't match generated tree";
-    }
-
     const finalMerkle = new MerkleTree(2);
-    newTree.setLeaf(0n, this.merkle);
-    newTree.setLeaf(1n, newTree.getRoot());
+    finalMerkle.setLeaf(0n, this.merkle);
+    finalMerkle.setLeaf(1n, newTree.getRoot());
 
-    if (expectedRoot != finalMerkle.getRoot()) {
-      throw "expected root doesn't match generated tree";
-    }
-
-    this.merkle = finalMerkle.getRoot();
+    return { merkle: newTree.getRoot(), expected: finalMerkle.getRoot() };
   }
 }
 
