@@ -170,11 +170,13 @@ describe('Tictactsign', () => {
   it('second get reward failed', async () => {
     await localDeploy();
 
+    const compileResult = await SaveToken.compile();
+
     const sign = Signature.create(zkAppPrivateKey, zkAppAddress2.toFields());
     const txn = await Mina.transaction(deployerAccount, () => {
       zkApp.setSaveContractAddress(sign, zkAppAddress2);
     });
-    await txn.prove();
+    const proof = await txn.prove();
     await txn.sign([deployerKey]).send();
 
     await getReward(UInt64.from(1699392007));

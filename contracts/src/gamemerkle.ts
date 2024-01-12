@@ -26,6 +26,7 @@ import {
   AccountUpdate,
   UInt32,
   public_,
+  VerificationKey,
 } from 'o1js';
 
 const tokenSymbol = 'MON';
@@ -90,14 +91,11 @@ export class GameMerkle extends SmartContract {
   deploy(args: DeployArgs) {
     super.deploy(args);
 
-    const permissionToEdit = Permissions.proof();
-
     this.account.permissions.set({
       ...Permissions.default(),
       editState: Permissions.signature(),
-      setTokenSymbol: permissionToEdit,
-      send: permissionToEdit,
-      receive: permissionToEdit,
+      send: Permissions.signature(),
+      setVerificationKey: Permissions.signature(),
     });
 
     this.account.tokenSymbol.set(tokenSymbol);
@@ -105,7 +103,7 @@ export class GameMerkle extends SmartContract {
 
   @method updateMerkle(leaf: Field, expectedRoot: Field) {
     // we fetch the on-chain commitment/root
-    const oldRoot = this.root.getAndAssertEquals();
+    const oldRoot = this.root.getAndRequireEquals();
     const newTree = new MerkleTree(2);
     newTree.setLeaf(0n, oldRoot);
     newTree.setLeaf(1n, leaf);
@@ -116,17 +114,16 @@ export class GameMerkle extends SmartContract {
     this.root.set(newTree.getRoot());
   }
 
-  @method deposit(amount: UInt64) {
-    let senderUpdate = AccountUpdate.createSigned(this.sender);
-    senderUpdate.send({ to: this, amount });
-  }
-
   // pay to a player, use nonce to be sure to don't skip payment or pay twice
   @method payout(amount: UInt64, receiver: PublicKey, newNonce: Field) {
-    const actualNonce = this.nonce.getAndAssertEquals();
+    const actualNonce = this.nonce.getAndRequireEquals();
     newNonce.assertEquals(actualNonce.add(1));
     this.send({ to: receiver, amount });
     // update with new nonce
     this.nonce.set(newNonce);
+  }
+
+  @method upgrade(vk: VerificationKey) {
+    this.account.verificationKey.set(vk);
   }
 }

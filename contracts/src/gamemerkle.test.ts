@@ -9,8 +9,12 @@ import {
   UInt64,
   Bool,
   UInt32,
+  VerificationKey,
+  fetchAccount,
 } from 'o1js';
 import { GameMerkle, BuildMerkle, GameAction } from './gamemerkle';
+import { GameDeposit } from './gamedeposit';
+import { getBalance } from 'o1js/dist/node/lib/mina';
 
 /*
  * This file specifies how to test the `Add` example smart contract. It is safe to delete this file and replace
@@ -28,20 +32,26 @@ describe('Game merkle', () => {
     senderKey: PrivateKey,
     zkAppAddress: PublicKey,
     zkAppPrivateKey: PrivateKey,
+    zkDepositAddress: PublicKey,
+    zkDepositPrivateKey: PrivateKey,
     player1: PublicKey,
     player1Key: PrivateKey,
     player2: PublicKey,
     player2Key: PrivateKey,
     verificationKey: any,
-    zkApp: GameMerkle;
+    verificationKey2: any,
+    Local: any,
+    zkApp: GameMerkle,
+    zkDeposit: GameDeposit;
   beforeAll(async () => {
     if (proofsEnabled) {
       const { verificationKey: verificationKey } = await GameMerkle.compile();
+      const { verificationKey: verificationKey2 } = await GameDeposit.compile();
     }
   });
 
   beforeEach(() => {
-    const Local = Mina.LocalBlockchain({ proofsEnabled });
+    Local = Mina.LocalBlockchain({ proofsEnabled });
     Mina.setActiveInstance(Local);
     ({ privateKey: deployerKey, publicKey: deployerAccount } =
       Local.testAccounts[0]);
@@ -53,13 +63,21 @@ describe('Game merkle', () => {
     zkAppPrivateKey = PrivateKey.random();
     zkAppAddress = zkAppPrivateKey.toPublicKey();
 
+    zkDepositPrivateKey = PrivateKey.random();
+    zkDepositAddress = zkDepositPrivateKey.toPublicKey();
+
     zkApp = new GameMerkle(zkAppAddress);
+    zkDeposit = new GameDeposit(zkDepositAddress);
   });
 
   async function localDeploy() {
     const txn = await Mina.transaction(deployerAccount, () => {
-      AccountUpdate.fundNewAccount(deployerAccount);
+      AccountUpdate.fundNewAccount(deployerAccount, 2);
       zkApp.deploy({ verificationKey, zkappKey: zkAppPrivateKey });
+      zkDeposit.deploy({
+        verificationKey: verificationKey2,
+        zkappKey: zkDepositPrivateKey,
+      });
     });
     await txn.prove();
     // this tx needs .sign(), because `deploy()` adds an account update that requires signature authorization
@@ -70,6 +88,50 @@ describe('Game merkle', () => {
     await localDeploy();
     await createMerkle(100);
     await createMerkle(50);
+  });
+
+  it('upgrade', async () => {
+    const compileResult = await GameMerkle.compile();
+
+    const txn = await Mina.transaction(deployerAccount, () => {
+      AccountUpdate.fundNewAccount(deployerAccount);
+      zkApp.upgrade(compileResult.verificationKey);
+      zkApp.requireSignature();
+    });
+    const proof = await txn.prove();
+    await txn.sign([deployerKey, zkAppPrivateKey]).send();
+  });
+
+  it('deposit', async () => {
+    Local.addAccount(zkAppAddress, '0');
+    Local.addAccount(zkDepositAddress, '0');
+    const amount = new UInt64(2_000_000_000);
+
+    await fetchAccount({ publicKey: zkAppAddress });
+
+    let balance = await getBalance(zkAppAddress);
+
+    console.log('balance after deposit', balance.toJSON());
+
+    // set contract receiver address
+    const txn = await Mina.transaction(deployerAccount, () => {
+      zkDeposit.setContractAddress(zkAppAddress);
+      zkDeposit.requireSignature();
+    });
+    await txn.prove();
+    await txn.sign([deployerKey, zkDepositPrivateKey]).send();
+
+    const txn2 = await Mina.transaction(deployerAccount, () => {
+      zkDeposit.deposit(amount);
+      zkDeposit.requireSignature();
+    });
+    await txn2.prove();
+    await txn2.sign([deployerKey]).send();
+
+    balance = await getBalance(zkAppAddress);
+    expect(balance).toEqual(amount);
+
+    console.log('balance after deposit', balance.toJSON());
   });
 
   async function createMerkle(size: number) {
