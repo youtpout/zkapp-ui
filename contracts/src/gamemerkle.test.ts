@@ -102,6 +102,34 @@ describe('Game merkle', () => {
     await txn.sign([deployerKey, zkAppPrivateKey]).send();
   });
 
+  it('payout', async () => {
+    Local.addAccount(zkAppAddress, '5000000');
+    const amount = new UInt64(1000000);
+
+    await fetchAccount({ publicKey: zkAppAddress });
+
+    let balance = await getBalance(zkAppAddress);
+    let balanceUser = await getBalance(player1);
+
+    console.log('balance app before payout', balance.toJSON());
+    console.log('balance user before payout', balanceUser.toJSON());
+
+    const txn = await Mina.transaction(deployerAccount, () => {
+      zkApp.payout(amount, player1, new Field(1));
+      zkApp.requireSignature();
+    });
+    await txn.prove();
+    await txn.sign([deployerKey, zkAppPrivateKey]).send();
+
+    const newbalance = await getBalance(zkAppAddress);
+    const newbalanceUser = await getBalance(player1);
+    expect(newbalance).toEqual(balance.sub(amount));
+    expect(newbalanceUser).toEqual(balanceUser.add(amount));
+
+    console.log('balance after deposit', newbalance.toJSON());
+    console.log('balance user after payout', newbalanceUser.toJSON());
+  });
+
   it('deposit', async () => {
     Local.addAccount(zkAppAddress, '0');
     Local.addAccount(zkDepositAddress, '0');
