@@ -37,6 +37,7 @@ export class GameAction extends Struct({
   player2: PublicKey,
   idAction: UInt64,
   amount: UInt64,
+  idItem: UInt64,
   actionType: UInt32,
 }) {
   constructor(value: {
@@ -44,6 +45,7 @@ export class GameAction extends Struct({
     player2: PublicKey;
     idAction: UInt64;
     amount: UInt64;
+    idItem: UInt64;
     actionType: UInt32;
   }) {
     super(value);
@@ -57,6 +59,7 @@ export class GameAction extends Struct({
       this.player2.isOdd.toField(),
       new Field(this.idAction.value),
       new Field(this.amount.value),
+      new Field(this.idItem.value),
       new Field(this.actionType.value),
     ]);
   }
@@ -81,12 +84,35 @@ export class BuildMerkle {
   }
 }
 
+export class PayoutData extends Struct({
+  receiver: PublicKey,
+  amount: UInt64,
+  nonce: Field,
+}) {
+  constructor(value: { receiver: PublicKey; amount: UInt64; nonce: Field }) {
+    super(value);
+  }
+
+  hash(): Field {
+    return Poseidon.hash([
+      this.receiver.x,
+      this.receiver.isOdd.toField(),
+      new Field(this.amount.value),
+      this.nonce,
+    ]);
+  }
+}
+
 export class GameMerkle extends SmartContract {
   // the root is the root hash of our off-chain Merkle tree
   @state(Field) root = State<Field>();
 
   // payment nonce
   @state(Field) nonce = State<Field>();
+
+  events = {
+    payout: PayoutData,
+  };
 
   deploy(args: DeployArgs) {
     super.deploy(args);
@@ -121,6 +147,10 @@ export class GameMerkle extends SmartContract {
     this.send({ to: receiver, amount });
     // update with new nonce
     this.nonce.set(newNonce);
+
+    // emit a event to retrieve deposit
+    const data = new PayoutData({ receiver, amount, nonce: newNonce });
+    this.emitEvent('payout', data);
   }
 
   @method upgrade(vk: VerificationKey) {

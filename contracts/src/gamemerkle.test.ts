@@ -224,6 +224,7 @@ describe('Game merkle', () => {
         actionType: new UInt32(1),
         idAction: new UInt64(index + 1),
         amount: new UInt64(index * 1000),
+        idItem: new UInt64(index + 1),
       });
       actions.push(newAction);
     }
