@@ -67,6 +67,8 @@ export class GameDeposit extends SmartContract {
 
   @method setContractAddress(contractAddress: PublicKey) {
     const actualOwner = this.Owner.getAndRequireEquals();
+    // don't set is the owner is not defined
+    actualOwner.isEmpty().assertFalse();
     AccountUpdate.createSigned(actualOwner);
     this.GameContract.set(contractAddress);
   }

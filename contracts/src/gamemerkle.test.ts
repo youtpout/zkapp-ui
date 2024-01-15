@@ -134,7 +134,7 @@ describe('Game merkle', () => {
 
     let balance = await getBalance(zkAppAddress);
 
-    // set contract receiver address
+    // set owner address
     const tx = await Mina.transaction(deployerAccount, () => {
       zkDeposit.setOwner(player1);
       zkDeposit.requireSignature();
@@ -159,6 +159,56 @@ describe('Game merkle', () => {
 
     balance = await getBalance(zkAppAddress);
     expect(balance).toEqual(amount);
+  });
+
+  it('check deposit right', async () => {
+    Local.addAccount(zkAppAddress, '0');
+    Local.addAccount(zkDepositAddress, '0');
+
+    let owner = zkDeposit.Owner.get();
+    console.log('owner', owner.toJSON());
+    console.log('empty', PublicKey.empty().toJSON());
+    // you need private key of newowner if actual owner is empty
+    const tx = await Mina.transaction(deployerAccount, () => {
+      zkDeposit.setOwner(player1);
+      zkDeposit.requireSignature();
+    });
+    await tx.prove();
+    await expect(
+      tx.sign([deployerKey, zkDepositPrivateKey]).send()
+    ).rejects.toThrow();
+
+    // owner need to be defined to set contract address
+    await expect(
+      Mina.transaction(deployerAccount, () => {
+        zkDeposit.setContractAddress(zkAppAddress);
+        zkDeposit.requireSignature();
+      })
+    ).rejects.toThrow();
+
+    const tx3 = await Mina.transaction(deployerAccount, () => {
+      zkDeposit.setOwner(player1);
+      zkDeposit.requireSignature();
+    });
+    await tx3.prove();
+    await tx3.sign([deployerKey, zkDepositPrivateKey, player1Key]).send();
+
+    // you need private key of owner to set contract address
+    const tx4 = await Mina.transaction(deployerAccount, () => {
+      zkDeposit.setContractAddress(zkAppAddress);
+      zkDeposit.requireSignature();
+    });
+    await tx4.prove();
+    await expect(
+      tx4.sign([deployerKey, zkDepositPrivateKey]).send()
+    ).rejects.toThrow();
+
+    const tx5 = await Mina.transaction(deployerAccount, () => {
+      zkDeposit.setContractAddress(zkAppAddress);
+      zkDeposit.requireSignature();
+    });
+    await tx5.prove();
+    await tx5.sign([deployerKey, player1Key, zkDepositPrivateKey]).send();
   });
 
   async function createMerkle(size: number) {
