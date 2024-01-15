@@ -151,8 +151,6 @@ describe('Game merkle', () => {
     await txn.sign([deployerKey, player1Key, zkDepositPrivateKey]).send();
 
     const txn2 = await Mina.transaction(deployerAccount, () => {
-      let senderUpdate = AccountUpdate.createSigned(deployerAccount);
-      senderUpdate.send({ to: zkDepositAddress, amount });
       zkDeposit.deposit(amount);
       zkDeposit.requireSignature();
     });
