@@ -10,6 +10,7 @@ import {
   Bool,
   UInt32,
   VerificationKey,
+  Permissions,
   fetchAccount,
 } from 'o1js';
 import { GameMerkle, BuildMerkle, GameAction } from './gamemerkle';
@@ -111,9 +112,6 @@ describe('Game merkle', () => {
     let balance = await getBalance(zkAppAddress);
     let balanceUser = await getBalance(player1);
 
-    console.log('balance app before payout', balance.toJSON());
-    console.log('balance user before payout', balanceUser.toJSON());
-
     const txn = await Mina.transaction(deployerAccount, () => {
       zkApp.payout(amount, player1, new Field(1));
       zkApp.requireSignature();
@@ -125,9 +123,6 @@ describe('Game merkle', () => {
     const newbalanceUser = await getBalance(player1);
     expect(newbalance).toEqual(balance.sub(amount));
     expect(newbalanceUser).toEqual(balanceUser.add(amount));
-
-    console.log('balance after deposit', newbalance.toJSON());
-    console.log('balance user after payout', newbalanceUser.toJSON());
   });
 
   it('deposit', async () => {
@@ -139,7 +134,13 @@ describe('Game merkle', () => {
 
     let balance = await getBalance(zkAppAddress);
 
-    console.log('balance after deposit', balance.toJSON());
+    // set contract receiver address
+    const tx = await Mina.transaction(deployerAccount, () => {
+      zkDeposit.setOwner(player1);
+      zkDeposit.requireSignature();
+    });
+    await tx.prove();
+    await tx.sign([deployerKey, player1Key, zkDepositPrivateKey]).send();
 
     // set contract receiver address
     const txn = await Mina.transaction(deployerAccount, () => {
@@ -147,19 +148,19 @@ describe('Game merkle', () => {
       zkDeposit.requireSignature();
     });
     await txn.prove();
-    await txn.sign([deployerKey, zkDepositPrivateKey]).send();
+    await txn.sign([deployerKey, player1Key, zkDepositPrivateKey]).send();
 
     const txn2 = await Mina.transaction(deployerAccount, () => {
+      let senderUpdate = AccountUpdate.createSigned(deployerAccount);
+      senderUpdate.send({ to: zkDepositAddress, amount });
       zkDeposit.deposit(amount);
       zkDeposit.requireSignature();
     });
     await txn2.prove();
-    await txn2.sign([deployerKey]).send();
+    await txn2.sign([deployerKey, zkDepositPrivateKey]).send();
 
     balance = await getBalance(zkAppAddress);
     expect(balance).toEqual(amount);
-
-    console.log('balance after deposit', balance.toJSON());
   });
 
   async function createMerkle(size: number) {

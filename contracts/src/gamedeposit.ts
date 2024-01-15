@@ -15,6 +15,7 @@ import {
   Struct,
   Field,
   Poseidon,
+  Provable,
 } from 'o1js';
 
 export class DepositData extends Struct({
@@ -35,8 +36,8 @@ export class DepositData extends Struct({
 }
 
 export class GameDeposit extends SmartContract {
-  // the root is the root hash of our off-chain Merkle tree
   @state(PublicKey) GameContract = State<PublicKey>();
+  @state(PublicKey) Owner = State<PublicKey>();
 
   events = {
     deposit: DepositData,
@@ -51,7 +52,22 @@ export class GameDeposit extends SmartContract {
     });
   }
 
+  @method setOwner(newOwner: PublicKey) {
+    // define owner of the contract to update info like owner and contract address
+    const actualOwner = this.Owner.getAndRequireEquals();
+    const contractOwner = Provable.if<PublicKey>(
+      actualOwner.equals(PublicKey.empty()),
+      newOwner,
+      actualOwner
+    );
+    AccountUpdate.createSigned(contractOwner);
+
+    this.Owner.set(newOwner);
+  }
+
   @method setContractAddress(contractAddress: PublicKey) {
+    const actualOwner = this.Owner.getAndRequireEquals();
+    AccountUpdate.createSigned(actualOwner);
     this.GameContract.set(contractAddress);
   }
 
