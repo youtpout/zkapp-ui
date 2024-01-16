@@ -25,7 +25,7 @@
     "testGame": "node --experimental-vm-modules node_modules/jest/bin/jest.js -- gamemerkle --watch",
     "lint": "npx eslint src/* --fix",
     "start": "node build/src/run.js",
-    "update": "node build/src/update.js"
+    "update": "node build/src/updategamemerkle.js"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.16.4",

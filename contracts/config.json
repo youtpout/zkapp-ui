@@ -1,21 +1,4 @@
 {
   "version": 1,
-  "deployAliases": {
-    "gamemerkle": {
-      "url": "https://proxy.berkeley.minaexplorer.com/graphql",
-      "keyPath": "keys/gamemerkle.json",
-      "feepayerKeyPath": "C:\\Users\\EddyB/.cache/zkapp-cli/keys/eke2nzh8rnlvxnkp8j3vuenyd2u3hnyhxz4cwes6yxacsjnkuco8.json",
-      "feepayerAlias": "eke2nzh8rnlvxnkp8j3vuenyd2u3hnyhxz4cwes6yxacsjnkuco8",
-      "fee": "0.1",
-      "smartContract": "GameMerkle"
-    },
-    "gamedeposit": {
-      "url": "https://proxy.berkeley.minaexplorer.com/graphql",
-      "keyPath": "keys/gamedeposit.json",
-      "feepayerKeyPath": "C:\\Users\\EddyB/.cache/zkapp-cli/keys/eke2nzh8rnlvxnkp8j3vuenyd2u3hnyhxz4cwes6yxacsjnkuco8.json",
-      "feepayerAlias": "eke2nzh8rnlvxnkp8j3vuenyd2u3hnyhxz4cwes6yxacsjnkuco8",
-      "fee": "0.1",
-      "smartContract": "GameDeposit"
-    }
-  }
+  "deployAliases": {}
 }
