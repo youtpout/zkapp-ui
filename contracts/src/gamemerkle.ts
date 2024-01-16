@@ -87,9 +87,9 @@ export class BuildMerkle {
 export class PayoutData extends Struct({
   receiver: PublicKey,
   amount: UInt64,
-  nonce: Field,
+  index: Field,
 }) {
-  constructor(value: { receiver: PublicKey; amount: UInt64; nonce: Field }) {
+  constructor(value: { receiver: PublicKey; amount: UInt64; index: Field }) {
     super(value);
   }
 
@@ -98,7 +98,7 @@ export class PayoutData extends Struct({
       this.receiver.x,
       this.receiver.isOdd.toField(),
       new Field(this.amount.value),
-      this.nonce,
+      this.index,
     ]);
   }
 }
@@ -108,7 +108,7 @@ export class GameMerkle extends SmartContract {
   @state(Field) root = State<Field>();
 
   // payment nonce
-  @state(Field) nonce = State<Field>();
+  @state(Field) indexPayout = State<Field>();
 
   events = {
     payout: PayoutData,
@@ -141,15 +141,15 @@ export class GameMerkle extends SmartContract {
   }
 
   // pay to a player, use nonce to be sure to don't skip payment or pay twice
-  @method payout(amount: UInt64, receiver: PublicKey, newNonce: Field) {
-    const actualNonce = this.nonce.getAndRequireEquals();
-    newNonce.assertEquals(actualNonce.add(1));
+  @method payout(amount: UInt64, receiver: PublicKey, newIndex: Field) {
+    const actualIndex = this.indexPayout.getAndRequireEquals();
+    newIndex.assertEquals(actualIndex.add(1));
     this.send({ to: receiver, amount });
     // update with new nonce
-    this.nonce.set(newNonce);
+    this.indexPayout.set(newIndex);
 
     // emit a event to retrieve deposit
-    const data = new PayoutData({ receiver, amount, nonce: newNonce });
+    const data = new PayoutData({ receiver, amount, index: newIndex });
     this.emitEvent('payout', data);
   }
 
