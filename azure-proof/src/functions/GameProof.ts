@@ -1,6 +1,12 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { GameMerkle, GameAction, BuildMerkle } from '../../../contracts/src/gamemerkle';
-import { Field, Mina, PrivateKey, PublicKey } from "o1js";
+import { Field, Mina, PrivateKey, PublicKey, UInt64 } from "o1js";
+
+class payoutInfo{
+    amount:string;
+    receiver:string;
+    newIndex:string;
+    }
 
 export async function GameProof(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
     context.log(`Http function processed request for url "${request.url}"`);
@@ -10,6 +16,9 @@ export async function GameProof(request: HttpRequest, context: InvocationContext
     let result = "";
     if(name === "updateMerkle"){
        result = (await updateMerkle(datas)).toJSON();
+    }
+    else if(name == "payout"){
+  result = (await payout(datas)).toJSON();
     }
 
     return { body: result };
@@ -34,6 +43,26 @@ async function updateMerkle(jsonActions: string): Promise<Field>{
 
     const txn = await Mina.transaction(deployerAccount, () => {
       zkApp.updateMerkle(result.merkle, result.expected);
+      zkApp.requireSignature();
+    });
+    await txn.prove();
+    await txn.sign([deployerKey, zkAppPrivateKey]).send();
+
+    const merkleRoot = await zkApp.root.get();
+    return merkleRoot;
+}
+
+
+
+async function payout(jsonActions: string): Promise<Field>{
+    const zkAppAddress =PublicKey.fromBase58("");
+    
+    const zkApp= new GameMerkle(zkAppAddress);
+  
+    const payoutInfo: payoutInfo = JSON.parse(jsonActions);   
+
+    const txn = await Mina.transaction(deployerAccount, () => {
+      zkApp.payout(UInt64.from(payoutInfo.amount),PublicKey.fromBase58(payoutInfo.receiver),Field.from(payoutInfo.newIndex));
       zkApp.requireSignature();
     });
     await txn.prove();
