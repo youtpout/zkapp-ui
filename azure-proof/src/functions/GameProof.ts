@@ -8,6 +8,8 @@ class payoutInfo{
     newIndex:string;
     }
 
+GameMerkle.compile();
+
 export async function GameProof(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
     context.log(`Http function processed request for url "${request.url}"`);
 
@@ -22,6 +24,9 @@ export async function GameProof(request: HttpRequest, context: InvocationContext
     }
     else if(name == "upgrade"){
         result = (await upgrade(datas)).toJSON();
+    }
+    else{
+        throw new Error("Not found");
     }
 
     return { body: result };
