@@ -16,6 +16,7 @@ import {
 import { GameMerkle, BuildMerkle, GameAction } from './gamemerkle';
 import { GameDeposit } from './gamedeposit';
 import { getBalance } from 'o1js/dist/node/lib/mina';
+import { BaseMerkleWitness } from 'o1js/dist/node/lib/merkle_tree';
 
 /*
  * This file specifies how to test the `Add` example smart contract. It is safe to delete this file and replace
@@ -107,22 +108,61 @@ describe('Game merkle', () => {
     Local.addAccount(zkAppAddress, '5000000');
     const amount = new UInt64(1000000);
 
-    await fetchAccount({ publicKey: zkAppAddress });
+    const actualMerkle = zkApp.root.get();
 
-    let balance = await getBalance(zkAppAddress);
-    let balanceUser = await getBalance(player1);
+    const buildMerkle = new BuildMerkle(actualMerkle);
 
-    /*   const txn = await Mina.transaction(deployerAccount, () => {
-      zkApp.payout(amount, player1, new Field(1));
+    const actions: GameAction[] = [];
+    for (let index = 0; index < 10; index++) {
+      const newAction = new GameAction({
+        player1,
+        player2,
+        actionType: new UInt32(1),
+        idAction: new UInt64(index + 1),
+        amount: new UInt64(index * 1000),
+        idItem: new UInt64(index + 1),
+      });
+      actions.push(newAction);
+    }
+    // payout action
+    const actionpayout = new GameAction({
+      player1,
+      player2,
+      actionType: new UInt32(2),
+      idAction: new UInt64(11),
+      amount: amount,
+      idItem: new UInt64(1),
+    });
+    actions.push(actionpayout);
+
+    const result = buildMerkle.build(actions);
+
+    const buildWitness = new BuildMerkle(actualMerkle);
+    const witness = buildWitness.getWitnessForAction(actions, actionpayout);
+
+    const txn = await Mina.transaction(deployerAccount, () => {
+      zkApp.updateMerkle(result.merkle, result.expected);
       zkApp.requireSignature();
     });
     await txn.prove();
     await txn.sign([deployerKey, zkAppPrivateKey]).send();
 
+    await fetchAccount({ publicKey: zkAppAddress });
+
+    let balance = await getBalance(zkAppAddress);
+    let balanceUser = await getBalance(player1);
+
+    const txn2 = await Mina.transaction(deployerAccount, () => {
+      zkApp.payout(actionpayout, new BaseMerkleWitness(witness));
+      zkApp.requireSignature();
+    });
+    await txn2.prove();
+    await txn2.sign([deployerKey, zkAppPrivateKey]).send();
+
     const newbalance = await getBalance(zkAppAddress);
     const newbalanceUser = await getBalance(player1);
     expect(newbalance).toEqual(balance.sub(amount));
-    expect(newbalanceUser).toEqual(balanceUser.add(amount));*/
+    expect(newbalanceUser).toEqual(balanceUser.add(amount));
   });
 
   it('deposit', async () => {

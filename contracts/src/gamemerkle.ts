@@ -28,7 +28,7 @@ import {
   public_,
   VerificationKey,
 } from 'o1js';
-import { Witness } from 'o1js/dist/node/lib/merkle_tree';
+import { BaseMerkleWitness, Witness } from 'o1js/dist/node/lib/merkle_tree';
 
 const tokenSymbol = 'MON';
 const mintAmount = 1_000_000_000;
@@ -76,7 +76,10 @@ export class BuildMerkle {
     this.merkle = actualMerkle;
   }
 
-  build(gameActions: GameAction[]): { merkle: Field; expected: Field } {
+  build(gameActions: GameAction[]): {
+    merkle: Field;
+    expected: Field;
+  } {
     const newTree = new MerkleTree(gameActions.length);
     newTree.fill(gameActions.map((x) => x.hash()));
 
@@ -85,6 +88,26 @@ export class BuildMerkle {
     finalMerkle.setLeaf(1n, newTree.getRoot());
 
     return { merkle: newTree.getRoot(), expected: finalMerkle.getRoot() };
+  }
+
+  getWitnessForAction(
+    gameActions: GameAction[],
+    gameAction: GameAction
+  ): Witness {
+    const newTree = new MerkleTree(gameActions.length);
+    newTree.fill(gameActions.map((x) => x.hash()));
+
+    let index = gameActions.findIndex((x) => x === gameAction);
+
+    let witness = newTree.getWitness(BigInt(index));
+
+    const finalMerkle = new MerkleTree(2);
+    finalMerkle.setLeaf(0n, this.merkle);
+    finalMerkle.setLeaf(1n, newTree.getRoot());
+
+    let witnessFinal = finalMerkle.getWitness(1n);
+
+    return witness.concat(witnessFinal);
   }
 }
 
@@ -144,8 +167,8 @@ export class GameMerkle extends SmartContract {
     this.root.set(newTree.getRoot());
   }
 
-  // pay to a player, use nonce to be sure to don't skip payment or pay twice
-  @method payout(gameAction: GameAction, witness: MerkleWitness128) {
+  // pay to a player, proof it's on actual merkle root
+  @method payout(gameAction: GameAction, witness: BaseMerkleWitness) {
     gameAction.actionType.assertEquals(payoutAction);
     const actualIndex = this.indexPayout.getAndRequireEquals();
 
