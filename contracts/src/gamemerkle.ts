@@ -28,9 +28,11 @@ import {
   public_,
   VerificationKey,
 } from 'o1js';
+import { Witness } from 'o1js/dist/node/lib/merkle_tree';
 
 const tokenSymbol = 'MON';
 const mintAmount = 1_000_000_000;
+const payoutAction = new UInt32(5);
 
 export class GameAction extends Struct({
   player1: PublicKey,
@@ -87,9 +89,9 @@ export class BuildMerkle {
 export class PayoutData extends Struct({
   receiver: PublicKey,
   amount: UInt64,
-  index: Field,
+  index: UInt64,
 }) {
-  constructor(value: { receiver: PublicKey; amount: UInt64; index: Field }) {
+  constructor(value: { receiver: PublicKey; amount: UInt64; index: UInt64 }) {
     super(value);
   }
 
@@ -98,7 +100,7 @@ export class PayoutData extends Struct({
       this.receiver.x,
       this.receiver.isOdd.toField(),
       new Field(this.amount.value),
-      this.index,
+      new Field(this.index.value),
     ]);
   }
 }
@@ -108,7 +110,7 @@ export class GameMerkle extends SmartContract {
   @state(Field) root = State<Field>();
 
   // payment nonce
-  @state(Field) indexPayout = State<Field>();
+  @state(UInt64) indexPayout = State<UInt64>();
 
   events = {
     payout: PayoutData,
@@ -141,15 +143,21 @@ export class GameMerkle extends SmartContract {
   }
 
   // pay to a player, use nonce to be sure to don't skip payment or pay twice
-  @method payout(amount: UInt64, receiver: PublicKey, newIndex: Field) {
+  @method payout(gameAction: GameAction, witnesses: Witness[]) {
+    gameAction.actionType.assertEquals(payoutAction);
     const actualIndex = this.indexPayout.getAndRequireEquals();
-    newIndex.assertEquals(actualIndex.add(1));
+
+    const index = gameAction.idItem;
+    const amount = gameAction.amount;
+    const receiver = gameAction.player1;
+
+    index.assertEquals(actualIndex.add(1));
     this.send({ to: receiver, amount });
     // update with new nonce
-    this.indexPayout.set(newIndex);
+    this.indexPayout.set(index);
 
     // emit a event to retrieve deposit
-    const data = new PayoutData({ receiver, amount, index: newIndex });
+    const data = new PayoutData({ receiver, amount, index });
     this.emitEvent('payout', data);
   }
 
