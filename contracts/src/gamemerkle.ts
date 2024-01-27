@@ -34,6 +34,8 @@ const tokenSymbol = 'MON';
 const mintAmount = 1_000_000_000;
 const payoutAction = new UInt32(5);
 
+export class MerkleWitness128 extends MerkleWitness(128) {}
+
 export class GameAction extends Struct({
   player1: PublicKey,
   player2: PublicKey,
@@ -143,9 +145,13 @@ export class GameMerkle extends SmartContract {
   }
 
   // pay to a player, use nonce to be sure to don't skip payment or pay twice
-  @method payout(gameAction: GameAction, witnesses: Witness[]) {
+  @method payout(gameAction: GameAction, witness: MerkleWitness128) {
     gameAction.actionType.assertEquals(payoutAction);
     const actualIndex = this.indexPayout.getAndRequireEquals();
+
+    const expectedRoot = witness.calculateRoot(gameAction.hash());
+    const actualRoot = this.root.getAndRequireEquals();
+    expectedRoot.assertEquals(actualRoot);
 
     const index = gameAction.idItem;
     const amount = gameAction.amount;
