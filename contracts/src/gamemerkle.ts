@@ -93,7 +93,10 @@ export class BuildMerkle {
   getWitnessForAction(
     gameActions: GameAction[],
     gameAction: GameAction
-  ): Witness {
+  ): {
+    witness: Witness;
+    witnessFinal: Witness;
+  } {
     const newTree = new MerkleTree(gameActions.length);
     newTree.fill(gameActions.map((x) => x.hash()));
 
@@ -107,7 +110,7 @@ export class BuildMerkle {
 
     let witnessFinal = finalMerkle.getWitness(1n);
 
-    return witness.concat(witnessFinal);
+    return { witness, witnessFinal };
   }
 }
 
@@ -168,11 +171,17 @@ export class GameMerkle extends SmartContract {
   }
 
   // pay to a player, proof it's on actual merkle root
-  @method payout(gameAction: GameAction, witness: BaseMerkleWitness) {
+  @method payout(
+    gameAction: GameAction,
+    witness: BaseMerkleWitness,
+    witnessFinal: BaseMerkleWitness
+  ) {
     gameAction.actionType.assertEquals(payoutAction);
     const actualIndex = this.indexPayout.getAndRequireEquals();
 
-    const expectedRoot = witness.calculateRoot(gameAction.hash());
+    const firstRoot = witness.calculateRoot(gameAction.hash());
+    const expectedRoot = witnessFinal.calculateRoot(firstRoot);
+
     const actualRoot = this.root.getAndRequireEquals();
     expectedRoot.assertEquals(actualRoot);
 

@@ -138,7 +138,10 @@ describe('Game merkle', () => {
     const result = buildMerkle.build(actions);
 
     const buildWitness = new BuildMerkle(actualMerkle);
-    const witness = buildWitness.getWitnessForAction(actions, actionpayout);
+    const { witness, witnessFinal } = buildWitness.getWitnessForAction(
+      actions,
+      actionpayout
+    );
 
     const txn = await Mina.transaction(deployerAccount, () => {
       zkApp.updateMerkle(result.merkle, result.expected);
@@ -153,7 +156,11 @@ describe('Game merkle', () => {
     let balanceUser = await getBalance(player1);
 
     const txn2 = await Mina.transaction(deployerAccount, () => {
-      zkApp.payout(actionpayout, new BaseMerkleWitness(witness));
+      zkApp.payout(
+        actionpayout,
+        new BaseMerkleWitness(witness),
+        new BaseMerkleWitness(witnessFinal)
+      );
       zkApp.requireSignature();
     });
     await txn2.prove();
