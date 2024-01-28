@@ -34,7 +34,8 @@ const tokenSymbol = 'MON';
 const mintAmount = 1_000_000_000;
 const payoutAction = new UInt32(5);
 
-export class MerkleWitness128 extends MerkleWitness(128) {}
+export class MerkleWitness8 extends MerkleWitness(8) {}
+export class MerkleWitness2 extends MerkleWitness(2) {}
 
 export class GameAction extends Struct({
   player1: PublicKey,
@@ -173,8 +174,8 @@ export class GameMerkle extends SmartContract {
   // pay to a player, proof it's on actual merkle root
   @method payout(
     gameAction: GameAction,
-    witness: BaseMerkleWitness,
-    witnessFinal: BaseMerkleWitness
+    witness: MerkleWitness8,
+    witnessFinal: MerkleWitness2
   ) {
     gameAction.actionType.assertEquals(payoutAction);
     const actualIndex = this.indexPayout.getAndRequireEquals();
