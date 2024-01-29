@@ -255,6 +255,37 @@ describe('Game merkle', () => {
     await tx5.sign([deployerKey, player1Key, zkDepositPrivateKey]).send();
   });
 
+  it('payout failed', async () => {
+    Local.addAccount(zkAppAddress, '5000000');
+    const amount = new UInt64(1000000);
+
+    await fetchAccount({ publicKey: zkAppAddress });
+
+    let balance = await getBalance(zkAppAddress);
+    let balanceUser = await getBalance(player1);
+
+    const txn = await Mina.transaction(deployerAccount, () => {
+      zkApp.payout(amount, player1, Field(1));
+      zkApp.requireSignature();
+    });
+    await txn.prove();
+    await expect(txn.sign([deployerKey]).send()).rejects.toThrow(
+      "Transaction verification failed: Cannot update field 'appState' because permission for this field is 'Signature', but the required authorization was not provided or is invalid."
+    );
+
+    // index doesn't match blockchain index
+    const txn2 = await expect(
+      Mina.transaction(deployerAccount, () => {
+        zkApp.payout(amount, player1, Field(2));
+        zkApp.requireSignature();
+      })
+    ).rejects.toThrow('Field.assertEquals(): 2 != 1');
+
+    // balance not move
+    let balance2 = await getBalance(zkAppAddress);
+    expect(balance).toEqual(balance2);
+  });
+
   async function createMerkle(size: number) {
     const actualMerkle = zkApp.root.get();
 
