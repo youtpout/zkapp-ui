@@ -13,13 +13,7 @@ import {
   Permissions,
   fetchAccount,
 } from 'o1js';
-import {
-  GameMerkle,
-  BuildMerkle,
-  GameAction,
-  MerkleWitness8,
-  MerkleWitness2,
-} from './gamemerkle';
+import { GameMerkle, BuildMerkle, GameAction } from './gamemerkle';
 import { GameDeposit } from './gamedeposit';
 import { getBalance } from 'o1js/dist/node/lib/mina';
 import { BaseMerkleWitness } from 'o1js/dist/node/lib/merkle_tree';
@@ -163,11 +157,7 @@ describe('Game merkle', () => {
     let balanceUser = await getBalance(player1);
 
     const txn2 = await Mina.transaction(deployerAccount, () => {
-      zkApp.payout(
-        actionpayout,
-        new MerkleWitness8(witness),
-        new MerkleWitness2(witnessFinal)
-      );
+      zkApp.payout(amount, player1, Field(1));
       zkApp.requireSignature();
     });
     await txn2.prove();

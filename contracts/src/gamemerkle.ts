@@ -34,9 +34,6 @@ const tokenSymbol = 'MON';
 const mintAmount = 1_000_000_000;
 const payoutAction = new UInt32(5);
 
-export class MerkleWitness8 extends MerkleWitness(8) {}
-export class MerkleWitness2 extends MerkleWitness(2) {}
-
 export class GameAction extends Struct({
   player1: PublicKey,
   player2: PublicKey,
@@ -118,9 +115,9 @@ export class BuildMerkle {
 export class PayoutData extends Struct({
   receiver: PublicKey,
   amount: UInt64,
-  index: UInt64,
+  index: Field,
 }) {
-  constructor(value: { receiver: PublicKey; amount: UInt64; index: UInt64 }) {
+  constructor(value: { receiver: PublicKey; amount: UInt64; index: Field }) {
     super(value);
   }
 
@@ -129,7 +126,7 @@ export class PayoutData extends Struct({
       this.receiver.x,
       this.receiver.isOdd.toField(),
       new Field(this.amount.value),
-      new Field(this.index.value),
+      this.index,
     ]);
   }
 }
@@ -139,7 +136,7 @@ export class GameMerkle extends SmartContract {
   @state(Field) root = State<Field>();
 
   // payment nonce
-  @state(UInt64) indexPayout = State<UInt64>();
+  @state(Field) indexPayout = State<Field>();
 
   events = {
     payout: PayoutData,
@@ -172,31 +169,15 @@ export class GameMerkle extends SmartContract {
   }
 
   // pay to a player, proof it's on actual merkle root
-  @method payout(
-    gameAction: GameAction,
-    witness: MerkleWitness8,
-    witnessFinal: MerkleWitness2
-  ) {
-    gameAction.actionType.assertEquals(payoutAction);
+  @method payout(amount: UInt64, receiver: PublicKey, newIndex: Field) {
     const actualIndex = this.indexPayout.getAndRequireEquals();
-
-    const firstRoot = witness.calculateRoot(gameAction.hash());
-    const expectedRoot = witnessFinal.calculateRoot(firstRoot);
-
-    const actualRoot = this.root.getAndRequireEquals();
-    expectedRoot.assertEquals(actualRoot);
-
-    const index = gameAction.idItem;
-    const amount = gameAction.amount;
-    const receiver = gameAction.player1;
-
-    index.assertEquals(actualIndex.add(1));
+    newIndex.assertEquals(actualIndex.add(1));
     this.send({ to: receiver, amount });
     // update with new nonce
-    this.indexPayout.set(index);
+    this.indexPayout.set(newIndex);
 
     // emit a event to retrieve deposit
-    const data = new PayoutData({ receiver, amount, index });
+    const data = new PayoutData({ receiver, amount, index: newIndex });
     this.emitEvent('payout', data);
   }
 
