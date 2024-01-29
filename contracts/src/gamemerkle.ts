@@ -168,7 +168,7 @@ export class GameMerkle extends SmartContract {
     this.root.set(newTree.getRoot());
   }
 
-  // pay to a player, proof it's on actual merkle root
+  // pay to a player, based on zkapp signature
   @method payout(amount: UInt64, receiver: PublicKey, newIndex: Field) {
     const actualIndex = this.indexPayout.getAndRequireEquals();
     newIndex.assertEquals(actualIndex.add(1));
