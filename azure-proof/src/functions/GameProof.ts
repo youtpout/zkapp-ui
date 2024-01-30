@@ -25,6 +25,12 @@ export async function GameProof(request: HttpRequest, context: InvocationContext
     else if(name == "upgrade"){
         result = (await upgrade(datas)).toJSON();
     }
+    else if(name == "lastPayout"){
+        result = (await lastPayout()).toJSON(); 
+    }
+    else if(name == "merkleRoot"){
+        result = (await actualRoot()).toJSON(); 
+    }
     else{
         throw new Error("Not found");
     }
@@ -96,8 +102,25 @@ async function upgrade(jsonActions: string): Promise<Field>{
     return Field(1);
 }
 
+
+async function lastPayout(): Promise<Field>{
+    const zkAppAddress =PublicKey.fromBase58("");
+    
+    const zkApp= new GameMerkle(zkAppAddress);
+
+  return await zkApp.indexPayout.get();
+}
+
+async function actualRoot(): Promise<Field>{
+    const zkAppAddress =PublicKey.fromBase58("");
+    
+    const zkApp= new GameMerkle(zkAppAddress);
+
+  return await zkApp.root.get();
+}
+
 app.http('GameProof', {
-    methods: ['POST'],
+    methods: ['POST', 'GET'],
     authLevel: 'anonymous',
     handler: GameProof
 });
