@@ -8,7 +8,7 @@ class payoutInfo{
     newIndex:string;
     }
 
-GameMerkle.compile();
+
 
 const privateKeyApp = `${process.env["APP_PRIVATE_KEY"]}`;
 const feePayerKey = `${process.env["PAYER_PRIVATE_KEY"]}`;
@@ -47,6 +47,7 @@ export async function GameProof(request: HttpRequest, context: InvocationContext
 };
 
 async function updateMerkle(jsonActions: string): Promise<Field>{
+    GameMerkle.compile();
     const zkApp= new GameMerkle(zkAppAddress);
 
     const actualMerkle = zkApp.root.get();
@@ -71,6 +72,7 @@ async function updateMerkle(jsonActions: string): Promise<Field>{
 
 
 async function payout(jsonActions: string): Promise<Field>{    
+    GameMerkle.compile();
     const zkApp= new GameMerkle(zkAppAddress);
   
     const payoutInfo: payoutInfo = JSON.parse(jsonActions);   
@@ -88,7 +90,7 @@ async function payout(jsonActions: string): Promise<Field>{
 
 
 async function upgrade(jsonActions: string): Promise<Field>{
-    
+    GameMerkle.compile();
     const zkApp= new GameMerkle(zkAppAddress);
 
     const txn = await Mina.transaction(deployerAccount, () => {
@@ -121,3 +123,7 @@ app.http('GameProof', {
     authLevel: 'anonymous',
     handler: GameProof
 });
+
+console.log("start");
+
+exports.index = GameProof
