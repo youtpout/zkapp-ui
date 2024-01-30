@@ -10,6 +10,14 @@ class payoutInfo{
 
 GameMerkle.compile();
 
+const privateKeyApp = `${process.env["APP_PRIVATE_KEY"]}`;
+const feePayerKey = `${process.env["PAYER_PRIVATE_KEY"]}`;
+
+const deployerKey = PrivateKey.fromBase58(feePayerKey);
+const deployerAccount = deployerKey.toPublicKey();
+const zkAppPrivateKey =PrivateKey.fromBase58(privateKeyApp);
+const zkAppAddress = zkAppPrivateKey.toPublicKey();
+
 export async function GameProof(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
     context.log(`Http function processed request for url "${request.url}"`);
 
@@ -38,13 +46,7 @@ export async function GameProof(request: HttpRequest, context: InvocationContext
     return { body: result };
 };
 
-const deployerAccount = PublicKey.fromBase58("");
-const deployerKey = PrivateKey.fromBase58("");
-const zkAppPrivateKey =PrivateKey.fromBase58("");
-
 async function updateMerkle(jsonActions: string): Promise<Field>{
-    const zkAppAddress =PublicKey.fromBase58("");
-    
     const zkApp= new GameMerkle(zkAppAddress);
 
     const actualMerkle = zkApp.root.get();
@@ -68,9 +70,7 @@ async function updateMerkle(jsonActions: string): Promise<Field>{
 
 
 
-async function payout(jsonActions: string): Promise<Field>{
-    const zkAppAddress =PublicKey.fromBase58("");
-    
+async function payout(jsonActions: string): Promise<Field>{    
     const zkApp= new GameMerkle(zkAppAddress);
   
     const payoutInfo: payoutInfo = JSON.parse(jsonActions);   
@@ -88,7 +88,6 @@ async function payout(jsonActions: string): Promise<Field>{
 
 
 async function upgrade(jsonActions: string): Promise<Field>{
-    const zkAppAddress =PublicKey.fromBase58("");
     
     const zkApp= new GameMerkle(zkAppAddress);
 
@@ -104,19 +103,17 @@ async function upgrade(jsonActions: string): Promise<Field>{
 
 
 async function lastPayout(): Promise<Field>{
-    const zkAppAddress =PublicKey.fromBase58("");
     
     const zkApp= new GameMerkle(zkAppAddress);
 
-  return await zkApp.indexPayout.get();
+    return await zkApp.indexPayout.get();
 }
 
 async function actualRoot(): Promise<Field>{
-    const zkAppAddress =PublicKey.fromBase58("");
     
     const zkApp= new GameMerkle(zkAppAddress);
 
-  return await zkApp.root.get();
+    return await zkApp.root.get();
 }
 
 app.http('GameProof', {
